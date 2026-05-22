@@ -17,13 +17,6 @@ from PIL import Image, ImageDraw, ImageFont
 BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR / "conxo.xlsx"
 ASSETS_DIR = BASE_DIR / "assets"
-LOGO_PATH = ASSETS_DIR / "MCode Analytics" / "MCODE Sport Analytics.png"
-CREST_PATH = ASSETS_DIR / "escudo" / "conxo_hd.png"
-FEDERATION_LOGO_PATH = (
-    ASSETS_DIR
-    / "Federación"
-    / "real-federacion-galega-de-futbol-logo-png_seeklogo-486963-1021954568.png"
-)
 TEAMS_ASSETS_DIR = ASSETS_DIR / "Equipos"
 
 TEAM_NAME = "Conxo Santiago B"
@@ -103,6 +96,38 @@ def _normalize_key(value: str) -> str:
     return "".join(char.lower() for char in text if char.isalnum())
 
 
+def _resolve_asset_path(*preferred_parts: str, fallback_contains: list[str] | None = None) -> Path | None:
+    preferred = ASSETS_DIR.joinpath(*preferred_parts)
+    if preferred.exists():
+        return preferred
+    if fallback_contains:
+        normalized_needles = [_normalize_key(part) for part in fallback_contains]
+        for candidate in ASSETS_DIR.rglob("*"):
+            if not candidate.is_file():
+                continue
+            normalized_candidate = _normalize_key(candidate.as_posix())
+            if all(needle in normalized_candidate for needle in normalized_needles):
+                return candidate
+    return None
+
+
+LOGO_PATH = _resolve_asset_path(
+    "MCode Analytics",
+    "MCODE Sport Analytics.png",
+    fallback_contains=["mcode", "sport", "analytics"],
+)
+CREST_PATH = _resolve_asset_path(
+    "escudo",
+    "conxo_hd.png",
+    fallback_contains=["escudo", "conxo", "hd"],
+)
+FEDERATION_LOGO_PATH = _resolve_asset_path(
+    "Federación",
+    "real-federacion-galega-de-futbol-logo-png_seeklogo-486963-1021954568.png",
+    fallback_contains=["federacion", "galega", "futbol", "logo"],
+)
+
+
 @st.cache_data(show_spinner=False)
 def build_team_crest_map():
     crest_map = {}
@@ -132,6 +157,9 @@ def _load_pdf_font(size: int, bold: bool = False):
                 "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
                 "/Library/Fonts/Arial Bold.ttf",
                 "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
             ]
         )
     else:
@@ -140,6 +168,9 @@ def _load_pdf_font(size: int, bold: bool = False):
                 "/System/Library/Fonts/Supplemental/Arial.ttf",
                 "/Library/Fonts/Arial.ttf",
                 "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
             ]
         )
     for candidate in font_candidates:
@@ -244,7 +275,7 @@ def _draw_radar_pdf(
     grid_color = "#dce8f1"
     secondary_grid_color = "#eef4f8"
     axis_color = "#d3e0e9"
-    label_font = _load_pdf_font(10, bold=True)
+    label_font = _load_pdf_font(9, bold=True)
     value_font = _load_pdf_font(10, bold=True)
     levels = [20, 40, 60, 80, 100]
     points: list[tuple[float, float]] = []
@@ -304,11 +335,12 @@ def _draw_radar_pdf(
         )
         points.append(point)
 
-        label_distance = radius + 26
+        label_distance = radius + 24
         label_x = cx + math.cos(angle) * label_distance
         label_y = cy + math.sin(angle) * label_distance
         value_text = f"{value:.1f}%"
-        combined_label = f"{label} {value_text}"
+        label_text = str(label).replace("% ", "").replace(" / ", "/")
+        combined_label = f"{label_text} {value_text}"
         label_bbox = draw.textbbox((0, 0), combined_label, font=label_font)
         text_width = label_bbox[2] - label_bbox[0]
         text_height = label_bbox[3] - label_bbox[1]
@@ -319,14 +351,26 @@ def _draw_radar_pdf(
             )
         elif math.cos(angle) > 0:
             text_pos = (
-                label_x + 8,
+                label_x + 18,
                 label_y - text_height / 2,
             )
         else:
             text_pos = (
-                label_x - text_width - 8,
+                label_x - text_width - 18,
                 label_y - text_height / 2,
             )
+        pad_x = 7
+        pad_y = 4
+        draw.rounded_rectangle(
+            (
+                text_pos[0] - pad_x,
+                text_pos[1] - pad_y,
+                text_pos[0] + text_width + pad_x,
+                text_pos[1] + text_height + pad_y,
+            ),
+            radius=8,
+            fill="#f8fbfd",
+        )
         draw.text(text_pos, combined_label, font=label_font, fill=_pct_color_hex(value))
 
     shadow_points = [(x + 4, y + 5) for x, y in points]
@@ -451,7 +495,7 @@ def build_player_report_pdf(
 
     ddraw.rounded_rectangle((670, 210, 1700, 650), radius=28, fill="#ffffff", outline="#d9e7ef", width=2)
     ddraw.text((710, 244), "Radar de disponibilidad y participación", font=h1, fill="#10364d")
-    _draw_radar_pdf(ddraw, (1185, 468), 104, radar_labels, radar_values)
+    _draw_radar_pdf(ddraw, (1185, 476), 98, radar_labels, radar_values)
 
     stat_cards = metric_groups[0] + metric_groups[1] + metric_groups[2]
     card_cols = 7
@@ -485,7 +529,7 @@ def build_player_report_pdf(
         comments_top = 1086
     else:
         comments_top = 946
-    comments_bottom = 1204
+    comments_bottom = 1210
     ddraw.rounded_rectangle((54, comments_top, 1700, comments_bottom), radius=24, fill="#ffffff", outline="#d9e7ef", width=2)
     ddraw.text((86, comments_top + 26), "Comentarios del entrenador", font=h1, fill="#10364d")
     comments_font = _load_pdf_font(22, bold=False)
@@ -493,7 +537,7 @@ def build_player_report_pdf(
     comment_lines = _wrap_text_for_width(ddraw, comments, comments_font, 1540)
     line_bbox = ddraw.textbbox((0, 0), "Ag", font=comments_font)
     line_height = (line_bbox[3] - line_bbox[1]) + 6
-    text_start_y = comments_top + 82
+    text_start_y = comments_top + 74
     max_lines_second_page = max(1, int((comments_bottom - text_start_y - 20) / line_height))
     second_page_lines = comment_lines[:max_lines_second_page]
     remaining_lines = comment_lines[max_lines_second_page:]
@@ -2799,7 +2843,7 @@ def render_plantilla(data):
             height=140,
             placeholder="Espacio reservado para observaciones técnicas, evolución, puntos fuertes y aspectos a mejorar.",
         )
-        player_comments_for_pdf = st.session_state.get(comments_key, player_comments)
+        player_comments_for_pdf = player_comments
         include_impact_pdf = st.checkbox(
             "Incluir en el PDF el bloque de GF, GC y diferencia con el jugador en el campo",
             value=True,
