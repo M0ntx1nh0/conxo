@@ -241,31 +241,32 @@ def _draw_radar_pdf(
     values: list[float],
 ):
     cx, cy = center
-    grid_color = "#e6eff5"
-    secondary_grid_color = "#edf4f8"
-    axis_color = "#d6e5ee"
-    label_font = _load_pdf_font(12, bold=True)
-    value_font = _load_pdf_font(12, bold=True)
+    grid_color = "#dce8f1"
+    secondary_grid_color = "#eef4f8"
+    axis_color = "#d3e0e9"
+    label_font = _load_pdf_font(10, bold=True)
+    value_font = _load_pdf_font(10, bold=True)
     levels = [20, 40, 60, 80, 100]
     points: list[tuple[float, float]] = []
     total = len(labels)
     start_angle = -math.pi / 2
 
-    shadow_box = (
-        cx - radius - 82,
-        cy - radius - 70,
-        cx + radius + 82,
-        cy + radius + 70,
+    # Soft halo so the radar feels lifted without drawing a heavy ring.
+    draw.ellipse(
+        (cx - radius - 18, cy - radius - 18, cx + radius + 18, cy + radius + 18),
+        outline="#edf4f8",
+        width=14,
     )
-    draw.ellipse(shadow_box, fill=(232, 240, 246))
-    inner_glow = (
-        cx - radius - 22,
-        cy - radius - 22,
-        cx + radius + 22,
-        cy + radius + 22,
+    draw.ellipse(
+        (cx - radius - 6, cy - radius - 6, cx + radius + 6, cy + radius + 6),
+        outline="#f6fafc",
+        width=10,
     )
-    draw.ellipse(inner_glow, fill=(255, 255, 255))
-    draw.ellipse((cx - radius - 2, cy - radius - 2, cx + radius + 2, cy + radius + 2), outline="#d9e9f2", width=1)
+    draw.ellipse(
+        (cx - radius - 2, cy - radius - 2, cx + radius + 2, cy + radius + 2),
+        outline="#d9e9f2",
+        width=1,
+    )
 
     for level in range(10, 101, 10):
         level_radius = radius * (level / 100.0)
@@ -284,7 +285,7 @@ def _draw_radar_pdf(
             tick_text = str(level)
             tick_bbox = draw.textbbox((0, 0), tick_text, font=value_font)
             draw.text(
-                (cx + 10, cy - level_radius - (tick_bbox[3] - tick_bbox[1]) / 2),
+                (cx + 12, cy - level_radius - (tick_bbox[3] - tick_bbox[1]) / 2),
                 tick_text,
                 font=value_font,
                 fill="#88a1b4",
@@ -303,7 +304,7 @@ def _draw_radar_pdf(
         )
         points.append(point)
 
-        label_distance = radius + 22
+        label_distance = radius + 26
         label_x = cx + math.cos(angle) * label_distance
         label_y = cy + math.sin(angle) * label_distance
         value_text = f"{value:.1f}%"
@@ -314,26 +315,26 @@ def _draw_radar_pdf(
         if abs(math.cos(angle)) < 0.25:
             text_pos = (
                 label_x - text_width / 2,
-                label_y - text_height / 2 + (-10 if math.sin(angle) < 0 else 10),
+                label_y - text_height / 2 + (-12 if math.sin(angle) < 0 else 12),
             )
         elif math.cos(angle) > 0:
             text_pos = (
-                label_x - 2,
+                label_x + 8,
                 label_y - text_height / 2,
             )
         else:
             text_pos = (
-                label_x - text_width + 2,
+                label_x - text_width - 8,
                 label_y - text_height / 2,
             )
         draw.text(text_pos, combined_label, font=label_font, fill=_pct_color_hex(value))
 
     shadow_points = [(x + 4, y + 5) for x, y in points]
-    draw.polygon(shadow_points, fill=(210, 225, 235))
-    draw.polygon(points, fill=(52, 102, 140), outline="#1f4f68", width=3)
+    draw.polygon(shadow_points, fill=(215, 229, 238))
+    draw.polygon(points, fill=(78, 129, 164), outline="#245a77", width=2)
     for point, value in zip(points, values):
         color = _pct_color_hex(value)
-        draw.ellipse((point[0] - 8, point[1] - 8, point[0] + 8, point[1] + 8), fill=color, outline="#1f4f68", width=2)
+        draw.ellipse((point[0] - 7, point[1] - 7, point[0] + 7, point[1] + 7), fill=color, outline="#245a77", width=2)
 
 
 def build_player_report_pdf(
@@ -395,8 +396,8 @@ def build_player_report_pdf(
     draw.text((footer_x, 1050), f"Informe diseñado por: {designer_name}", font=small_font, fill="#10364d")
     if brand_logo_path and brand_logo_path.exists():
         brand_logo = Image.open(brand_logo_path).convert("RGBA")
-        brand_logo.thumbnail((82, 82))
-        cover.paste(brand_logo, (1600, 1088), brand_logo)
+        brand_logo.thumbnail((58, 58))
+        cover.paste(brand_logo, (1620, 1112), brand_logo)
 
     detail = Image.new("RGB", page_size, "#f8fbfd")
     _draw_vertical_gradient(detail, (248, 251, 253), (236, 245, 250))
@@ -450,7 +451,7 @@ def build_player_report_pdf(
 
     ddraw.rounded_rectangle((670, 210, 1700, 650), radius=28, fill="#ffffff", outline="#d9e7ef", width=2)
     ddraw.text((710, 244), "Radar de disponibilidad y participación", font=h1, fill="#10364d")
-    _draw_radar_pdf(ddraw, (1185, 468), 116, radar_labels, radar_values)
+    _draw_radar_pdf(ddraw, (1185, 468), 104, radar_labels, radar_values)
 
     stat_cards = metric_groups[0] + metric_groups[1] + metric_groups[2]
     card_cols = 7
@@ -937,7 +938,8 @@ def render_header(team_name: str):
         </div>
     </div>
     """
-    st.sidebar.markdown(sidebar_branding_html, unsafe_allow_html=True)
+    with st.sidebar:
+        st.html(sidebar_branding_html)
 
 
 def render_sidebar_navigation():
@@ -2791,20 +2793,13 @@ def render_plantilla(data):
         )
 
         comments_key = f"player_comments_{selected_player}"
-        comments_snapshot_key = f"{comments_key}_pdf"
         player_comments = st.text_area(
             "Comentarios del jugador",
             key=comments_key,
             height=140,
             placeholder="Espacio reservado para observaciones técnicas, evolución, puntos fuertes y aspectos a mejorar.",
-            on_change=_sync_streamlit_text_snapshot,
-            args=(comments_key, comments_snapshot_key),
         )
-        if comments_snapshot_key not in st.session_state:
-            st.session_state[comments_snapshot_key] = player_comments
-        else:
-            st.session_state[comments_snapshot_key] = st.session_state.get(comments_key, player_comments)
-        player_comments_for_pdf = st.session_state.get(comments_snapshot_key, player_comments)
+        player_comments_for_pdf = st.session_state.get(comments_key, player_comments)
         include_impact_pdf = st.checkbox(
             "Incluir en el PDF el bloque de GF, GC y diferencia con el jugador en el campo",
             value=True,
