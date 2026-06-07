@@ -275,8 +275,8 @@ def _draw_radar_pdf(
     grid_color = "#dce8f1"
     secondary_grid_color = "#eef4f8"
     axis_color = "#d3e0e9"
-    label_font = _load_pdf_font(9, bold=True)
-    value_font = _load_pdf_font(10, bold=True)
+    label_font = _load_pdf_font(8, bold=True)
+    value_font = _load_pdf_font(9, bold=True)
     levels = [20, 40, 60, 80, 100]
     points: list[tuple[float, float]] = []
     total = len(labels)
@@ -335,7 +335,7 @@ def _draw_radar_pdf(
         )
         points.append(point)
 
-        label_distance = radius + 24
+        label_distance = radius + 30
         label_x = cx + math.cos(angle) * label_distance
         label_y = cy + math.sin(angle) * label_distance
         value_text = f"{value:.1f}%"
@@ -347,16 +347,16 @@ def _draw_radar_pdf(
         if abs(math.cos(angle)) < 0.25:
             text_pos = (
                 label_x - text_width / 2,
-                label_y - text_height / 2 + (-12 if math.sin(angle) < 0 else 12),
+                label_y - text_height / 2 + (-16 if math.sin(angle) < 0 else 16),
             )
         elif math.cos(angle) > 0:
             text_pos = (
-                label_x + 18,
+                label_x + 34,
                 label_y - text_height / 2,
             )
         else:
             text_pos = (
-                label_x - text_width - 18,
+                label_x - text_width - 34,
                 label_y - text_height / 2,
             )
         pad_x = 7
@@ -464,7 +464,7 @@ def build_player_report_pdf(
         brand_logo.thumbnail((110, 110))
         detail.paste(brand_logo, (1410, 52), brand_logo)
 
-    footer_small_font = _load_pdf_font(20, bold=False)
+    footer_small_font = _load_pdf_font(22, bold=False)
     top_meta_y = 184
     designer_text = f"Informe diseñado por: {designer_name}"
     coach_text = f"Entrenador: {coach_name}"
@@ -495,7 +495,7 @@ def build_player_report_pdf(
 
     ddraw.rounded_rectangle((670, 210, 1700, 650), radius=28, fill="#ffffff", outline="#d9e7ef", width=2)
     ddraw.text((710, 244), "Radar de disponibilidad y participación", font=h1, fill="#10364d")
-    _draw_radar_pdf(ddraw, (1185, 476), 98, radar_labels, radar_values)
+    _draw_radar_pdf(ddraw, (1185, 484), 92, radar_labels, radar_values)
 
     stat_cards = metric_groups[0] + metric_groups[1] + metric_groups[2]
     card_cols = 7
@@ -554,7 +554,13 @@ def build_player_report_pdf(
         pdf_pages.append(extra_page.convert("RGB"))
 
     output = BytesIO()
-    pdf_pages[0].save(output, format="PDF", save_all=True, append_images=pdf_pages[1:])
+    pdf_pages[0].save(
+        output,
+        format="PDF",
+        save_all=True,
+        append_images=pdf_pages[1:],
+        resolution=150.0,
+    )
     output.seek(0)
     return output.getvalue()
 
@@ -957,7 +963,11 @@ def render_header(team_name: str):
     st.markdown(header_html, unsafe_allow_html=True)
 
     logo_uri = _path_to_data_uri(LOGO_PATH) if LOGO_PATH.exists() else None
-    federation_uri = _path_to_data_uri(FEDERATION_LOGO_PATH) if FEDERATION_LOGO_PATH.exists() else None
+    federation_uri = (
+        _path_to_data_uri(FEDERATION_LOGO_PATH)
+        if FEDERATION_LOGO_PATH and FEDERATION_LOGO_PATH.exists()
+        else None
+    )
     sidebar_branding_html = f"""
     <div class="sidebar-brand-shell">
         <div class="sidebar-logo-row">
@@ -1128,10 +1138,22 @@ def render_change_panel(changes_list):
 def render_match_timeline(events, rival_name):
     render_subsection_title("Timeline del partido", "🕒")
     if not events:
-        st.markdown('<div class="people-empty">Sin goles registrados para esta jornada</div>', unsafe_allow_html=True)
+        st.markdown('<div class="people-empty">Sin acciones registradas para esta jornada</div>', unsafe_allow_html=True)
         return
 
     timeline_df = pd.DataFrame(events).copy()
+    crest_map = build_team_crest_map()
+    conxo_crest_uri = _path_to_data_uri(CREST_PATH) if CREST_PATH and Path(CREST_PATH).exists() else None
+    rival_crest_path = crest_map.get(_normalize_key(rival_name))
+    rival_crest_uri = _path_to_data_uri(rival_crest_path) if rival_crest_path and Path(rival_crest_path).exists() else None
+
+    action_meta = {
+        "goal": {"label": "Gol", "icon": "⚽", "stem": "#2f9e44"},
+        "yellow": {"label": "Tarjeta amarilla", "icon": "🟨", "stem": "#d4a72c"},
+        "red": {"label": "Tarjeta roja", "icon": "🟥", "stem": "#c55252"},
+        "change": {"label": "Cambio", "icon": "🔁", "stem": "#4d7e62"},
+    }
+
     def assign_levels(frame, threshold=6):
         levels = []
         last_minute_by_level = []
@@ -1155,88 +1177,91 @@ def render_match_timeline(events, rival_name):
     if not rival_df.empty:
         rival_df["level"] = assign_levels(rival_df)
 
+    max_minute = max(90, int(timeline_df["minute"].max()))
     width = 2320
     height = 700
-    margin_left = 120
+    margin_left = 240
     margin_right = 520
     axis_y = 340
     top_base = 235
     bottom_base = 455
     level_step = 82
     usable_width = width - margin_left - margin_right
+    team_label_x = margin_left - 58
+    crest_x = margin_left - 48
+    crest_size = 26
 
     def x_pos(minute):
-        return margin_left + (float(minute) / 90.0) * usable_width
+        return margin_left + (float(minute) / float(max_minute)) * usable_width
 
     svg_parts = [
         f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" xmlns="http://www.w3.org/2000/svg">',
         '<style>'
         '.axis{stroke:#8ea3b3;stroke-width:2;}'
         '.tick{stroke:#dbe5ed;stroke-width:1;}'
-        '.label{fill:#10364d;font:700 14px Arial, sans-serif;}'
-        '.sub{fill:#6b7c8f;font:600 12px Arial, sans-serif;}'
-        '.team{fill:#6b7c8f;font:700 14px Arial, sans-serif;}'
-        '.cardText{fill:#10364d;font:700 12px Arial, sans-serif;dominant-baseline:middle;}'
-        '.minute{fill:#10364d;font:700 12px Arial, sans-serif;}'
-        '.goalTag{fill:#10364d;font:600 11px Arial, sans-serif;}'
+        '.label{fill:#10364d;font:800 16px Arial, sans-serif;}'
+        '.sub{fill:#6b7c8f;font:700 13px Arial, sans-serif;}'
+        '.team{fill:#5b6f82;font:800 18px Arial, sans-serif;}'
+        '.eventTag{fill:#10364d;font:800 15px Arial, sans-serif;}'
+        '.eventDot{stroke:#f8fbfd;stroke-width:1.5;}'
         '</style>',
         f'<line x1="{margin_left}" y1="{axis_y}" x2="{width-margin_right}" y2="{axis_y}" class="axis" />',
-        f'<text x="{margin_left-24}" y="{top_base+10}" text-anchor="end" class="team">Conxo</text>',
-        f'<text x="{margin_left-24}" y="{bottom_base+10}" text-anchor="end" class="team">{rival_name}</text>',
+        f'<text x="{team_label_x}" y="{top_base+10}" text-anchor="end" class="team">Conxo</text>',
+        f'<text x="{team_label_x}" y="{bottom_base+10}" text-anchor="end" class="team">{rival_name}</text>',
     ]
+    if conxo_crest_uri:
+        svg_parts.append(
+            f'<image href="{conxo_crest_uri}" x="{crest_x}" y="{top_base-11}" width="{crest_size}" height="{crest_size}" preserveAspectRatio="xMidYMid meet" />'
+        )
+    if rival_crest_uri:
+        svg_parts.append(
+            f'<image href="{rival_crest_uri}" x="{crest_x}" y="{bottom_base-11}" width="{crest_size}" height="{crest_size}" preserveAspectRatio="xMidYMid meet" />'
+        )
 
     for tick in [0, 15, 30, 45, 60, 75, 90]:
         xpos = x_pos(tick)
         svg_parts.append(f'<line x1="{xpos}" y1="{axis_y-6}" x2="{xpos}" y2="{axis_y+6}" class="tick" />')
         svg_parts.append(f'<text x="{xpos}" y="{axis_y+34}" text-anchor="middle" class="sub">{tick}</text>')
 
-    def add_goal_block(row, is_conxo):
+    if max_minute > 90:
+        xpos = x_pos(max_minute)
+        svg_parts.append(f'<line x1="{xpos}" y1="{axis_y-6}" x2="{xpos}" y2="{axis_y+6}" class="tick" />')
+        svg_parts.append(f'<text x="{xpos}" y="{axis_y+34}" text-anchor="middle" class="sub">{max_minute}</text>')
+
+    def add_event_block(row, is_conxo):
         minute = int(row["minute"])
-        name = str(row["name"])
-        goal_type = str(row["type"])
+        event_kind = str(row["kind"])
+        event_meta = action_meta.get(event_kind, action_meta["goal"])
         level = int(row["level"])
         xpos = x_pos(minute)
-        stem_color = "#0f5d7a" if is_conxo else "#b54747"
-        card_fill = "#f8fbfe" if is_conxo else "#fff8f8"
-        card_border = "#cfe1ec" if is_conxo else "#efc5c5"
-        label_text = f"{minute}' · {name} · {goal_type}"
-        box_w = max(230, min(380, 8.6 * len(label_text)))
-        box_h = 42
-        diag_dx = 58 + (level * 26)
-        diag_dy = 58 + (level * 26)
+        if event_kind == "goal":
+            stem_color = "#2f9e44" if is_conxo else "#c55252"
+        else:
+            stem_color = event_meta["stem"] if is_conxo else "#b54747"
+        vertical_offset = 64 + (level * 56)
+        label_text = f"{minute}' {event_meta['icon']}"
 
         if is_conxo:
-            vertical_end_y = top_base - (level * level_step)
-            diag_end_x = xpos + diag_dx
-            diag_end_y = vertical_end_y - diag_dy
+            vertical_end_y = axis_y - vertical_offset
             svg_parts.append(f'<line x1="{xpos}" y1="{axis_y}" x2="{xpos}" y2="{vertical_end_y}" stroke="{stem_color}" stroke-width="2"/>')
-            svg_parts.append(f'<line x1="{xpos}" y1="{vertical_end_y}" x2="{diag_end_x}" y2="{diag_end_y}" stroke="{stem_color}" stroke-width="2"/>')
-            svg_parts.append(f'<text x="{xpos}" y="{axis_y-14}" text-anchor="middle" class="minute">{minute}\'</text>')
-            svg_parts.append(f'<text x="{xpos}" y="{axis_y+2}" text-anchor="middle" class="goalTag">Gol</text>')
-            angle = -45
+            svg_parts.append(f'<circle cx="{xpos}" cy="{axis_y}" r="5" fill="{stem_color}" class="eventDot"/>')
+            svg_parts.append(
+                f'<text x="{xpos}" y="{vertical_end_y-10}" text-anchor="middle" fill="{stem_color}" '
+                f'transform="rotate(-90 {xpos} {vertical_end_y-8})" class="eventTag">{label_text}</text>'
+            )
         else:
-            vertical_end_y = bottom_base + (level * level_step)
-            diag_end_x = xpos + diag_dx
-            diag_end_y = vertical_end_y + diag_dy
+            vertical_end_y = axis_y + vertical_offset
             svg_parts.append(f'<line x1="{xpos}" y1="{axis_y}" x2="{xpos}" y2="{vertical_end_y}" stroke="{stem_color}" stroke-width="2"/>')
-            svg_parts.append(f'<line x1="{xpos}" y1="{vertical_end_y}" x2="{diag_end_x}" y2="{diag_end_y}" stroke="{stem_color}" stroke-width="2"/>')
-            svg_parts.append(f'<text x="{xpos}" y="{axis_y-14}" text-anchor="middle" class="minute">{minute}\'</text>')
-            svg_parts.append(f'<text x="{xpos}" y="{axis_y+2}" text-anchor="middle" class="goalTag">Gol</text>')
-            angle = 45
-
-        anchor_x = diag_end_x
-        anchor_y = diag_end_y
-        svg_parts.append(
-            f'<g transform="translate({anchor_x} {anchor_y}) rotate({angle})">'
-            f'<rect x="0" y="{-box_h/2}" rx="10" ry="10" width="{box_w}" height="{box_h}" fill="{card_fill}" stroke="{card_border}" stroke-width="1.4"/>'
-            f'<text x="12" y="0" class="cardText">{label_text}</text>'
-            f'</g>'
-        )
+            svg_parts.append(f'<circle cx="{xpos}" cy="{axis_y}" r="5" fill="{stem_color}" class="eventDot"/>')
+            svg_parts.append(
+                f'<text x="{xpos}" y="{vertical_end_y+10}" text-anchor="middle" fill="{stem_color}" '
+                f'transform="rotate(90 {xpos} {vertical_end_y+8})" class="eventTag">{label_text}</text>'
+            )
 
     for _, row in own_df.iterrows():
-        add_goal_block(row, True)
+        add_event_block(row, True)
     for _, row in rival_df.iterrows():
-        add_goal_block(row, False)
+        add_event_block(row, False)
 
     svg_parts.append(f'<text x="{width/2}" y="{height-18}" text-anchor="middle" class="label">Minuto de partido</text>')
     svg_parts.append('</svg>')
@@ -1244,6 +1269,50 @@ def render_match_timeline(events, rival_name):
         f'<div class="timeline-svg-wrap">{"".join(svg_parts)}</div>',
         unsafe_allow_html=True,
     )
+
+    descriptive_rows = []
+    for _, row in timeline_df.sort_values(["minute", "sort_order"], ascending=[False, False]).iterrows():
+        kind = str(row["kind"])
+        event_meta = action_meta.get(kind, action_meta["goal"])
+        minute = int(row["minute"])
+        row_classes = ["timeline-log-row"]
+        detail_class = "timeline-log-name"
+        if kind == "goal":
+            detail_class = "timeline-log-name timeline-log-name--goal-conxo" if bool(row.get("is_conxo", False)) else "timeline-log-name timeline-log-name--goal-rival"
+            crest_uri = conxo_crest_uri if bool(row.get("is_conxo", False)) else rival_crest_uri
+            crest_html = (
+                f'<img src="{crest_uri}" class="timeline-log-crest" alt="Escudo">'
+                if crest_uri
+                else ""
+            )
+            detail_html = f'{crest_html}<span class="{detail_class}">{row["name"]}</span>'
+        elif kind in {"yellow", "red"}:
+            detail_class = "timeline-log-name timeline-log-name--yellow" if kind == "yellow" else "timeline-log-name timeline-log-name--red"
+            detail_html = f'<span class="{detail_class}">{row["name"]}</span>'
+        elif kind == "change":
+            detail_html = (
+                f'<span class="timeline-log-name timeline-log-name--in">↙ Entra {row["in_name"]}</span>'
+                f'<span class="timeline-log-sep">·</span>'
+                f'<span class="timeline-log-name timeline-log-name--out">↗ Sale {row["out_name"]}</span>'
+            )
+        else:
+            detail_html = f'<span class="timeline-log-name">{row.get("name", "")}</span>'
+
+        descriptive_rows.append(
+            f"""
+            <div class="{' '.join(row_classes)}">
+                <div class="timeline-log-minute">Min. {minute}</div>
+                <div class="timeline-log-action">
+                    <span class="timeline-log-icon">{event_meta["icon"]}</span>
+                    <span class="timeline-log-label">{row["action"]}</span>
+                </div>
+                <div class="timeline-log-detail">{detail_html}</div>
+            </div>
+            """
+        )
+
+    render_subsection_title("Timeline descriptivo", "🧾")
+    st.html(f'<div class="timeline-log-card">{"".join(descriptive_rows)}</div>')
 
 
 def render_general(data):
@@ -1432,13 +1501,63 @@ def render_general(data):
     for card_group in (yellows_list, reds_list):
         for card in card_group:
             card["minute"] = int(card["minute"])
-    timeline_events = (
-        goals[goals["Jornada"].eq(selected_round)][["Equipo Marca", "Nombre", "Minuto", "Tipo"]]
-        .sort_values("Minuto")
-        .assign(is_conxo=lambda df: df["Equipo Marca"].astype(str).str.strip().eq(team_name))
-        .rename(columns={"Nombre": "name", "Minuto": "minute", "Tipo": "type"})
-        .to_dict(orient="records")
-    )
+    timeline_events = []
+    for goal in scorers_list:
+        timeline_events.append(
+            {
+                "minute": int(goal["minute"]),
+                "kind": "goal",
+                "action": "Gol",
+                "name": str(goal["name"]),
+                "is_conxo": True,
+                "sort_order": 4,
+            }
+        )
+    for goal in rival_scorers_list:
+        timeline_events.append(
+            {
+                "minute": int(goal["minute"]),
+                "kind": "goal",
+                "action": "Gol",
+                "name": str(goal["name"]),
+                "is_conxo": False,
+                "sort_order": 4,
+            }
+        )
+    for card in yellows_list:
+        timeline_events.append(
+            {
+                "minute": int(card["minute"]),
+                "kind": "yellow",
+                "action": "Tarjeta amarilla",
+                "name": str(card["name"]),
+                "is_conxo": True,
+                "sort_order": 3,
+            }
+        )
+    for card in reds_list:
+        timeline_events.append(
+            {
+                "minute": int(card["minute"]),
+                "kind": "red",
+                "action": "Tarjeta roja",
+                "name": str(card["name"]),
+                "is_conxo": True,
+                "sort_order": 2,
+            }
+        )
+    for change in changes_list:
+        timeline_events.append(
+            {
+                "minute": int(change["minute"]),
+                "kind": "change",
+                "action": "Cambio",
+                "out_name": str(change["out_name"]),
+                "in_name": str(change["in_name"]),
+                "is_conxo": True,
+                "sort_order": 1,
+            }
+        )
 
     bottom_1, bottom_2, bottom_3 = st.columns([1, 1, 1])
     with bottom_1:
@@ -2837,13 +2956,15 @@ def render_plantilla(data):
         )
 
         comments_key = f"player_comments_{selected_player}"
+        comments_pdf_key = f"{comments_key}_pdf_snapshot"
         player_comments = st.text_area(
             "Comentarios del jugador",
             key=comments_key,
             height=140,
             placeholder="Espacio reservado para observaciones técnicas, evolución, puntos fuertes y aspectos a mejorar.",
         )
-        player_comments_for_pdf = player_comments
+        st.session_state[comments_pdf_key] = player_comments
+        player_comments_for_pdf = st.session_state.get(comments_pdf_key, "")
         include_impact_pdf = st.checkbox(
             "Incluir en el PDF el bloque de GF, GC y diferencia con el jugador en el campo",
             value=True,
@@ -3690,6 +3811,90 @@ def main():
             width: 100%;
             overflow-x: auto;
             padding-bottom: 0.25rem;
+        }
+        .timeline-log-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+            padding: 0.2rem 0 0.35rem;
+        }
+        .timeline-log-row {
+            display: grid;
+            grid-template-columns: 120px 220px 1fr;
+            gap: 0.85rem;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,253,0.98) 100%);
+            border: 1px solid #d9e7ef;
+            border-radius: 16px;
+            padding: 0.8rem 0.95rem;
+            box-shadow: 0 10px 20px rgba(16, 54, 77, 0.05);
+        }
+        .timeline-log-minute {
+            color: #10364d;
+            font-size: 0.92rem;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        .timeline-log-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: #10364d;
+            font-size: 0.92rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+        .timeline-log-icon {
+            font-size: 1rem;
+            line-height: 1;
+        }
+        .timeline-log-label {
+            color: #10364d;
+            font-weight: 800;
+        }
+        .timeline-log-detail {
+            color: #4f6477;
+            font-size: 0.9rem;
+            font-weight: 700;
+            line-height: 1.35;
+            display: flex;
+            align-items: center;
+            gap: 0.48rem;
+            flex-wrap: wrap;
+        }
+        .timeline-log-name {
+            color: #10364d;
+            font-weight: 800;
+        }
+        .timeline-log-crest {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+            flex-shrink: 0;
+            filter: drop-shadow(0 1px 1px rgba(16, 54, 77, 0.12));
+        }
+        .timeline-log-name--in {
+            color: #2f9e44;
+        }
+        .timeline-log-name--out {
+            color: #d95f59;
+        }
+        .timeline-log-name--goal-conxo {
+            color: #2f9e44;
+        }
+        .timeline-log-name--goal-rival {
+            color: #c55252;
+        }
+        .timeline-log-name--yellow {
+            color: #b88909;
+        }
+        .timeline-log-name--red {
+            color: #c55252;
+        }
+        .timeline-log-sep {
+            color: #8ba0b2;
+            margin: 0 0.28rem;
+            font-weight: 700;
         }
         .player-profile-shell {
             background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,253,0.98) 100%);
