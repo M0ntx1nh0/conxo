@@ -18,6 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR / "conxo.xlsx"
 ASSETS_DIR = BASE_DIR / "assets"
 TEAMS_ASSETS_DIR = ASSETS_DIR / "Equipos"
+FONTS_DIR = ASSETS_DIR / "fonts"
 
 TEAM_NAME = "Conxo Santiago B"
 COMPETITION_NAME = "JUVENIL - PREFERENTE FUTGAL (GRUPO 2)"
@@ -154,6 +155,7 @@ def _load_pdf_font(size: int, bold: bool = False):
     if bold:
         font_candidates.extend(
             [
+                FONTS_DIR / "DejaVuSans-Bold.ttf",
                 "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
                 "/Library/Fonts/Arial Bold.ttf",
                 "/System/Library/Fonts/Supplemental/Helvetica.ttc",
@@ -165,6 +167,7 @@ def _load_pdf_font(size: int, bold: bool = False):
     else:
         font_candidates.extend(
             [
+                FONTS_DIR / "DejaVuSans.ttf",
                 "/System/Library/Fonts/Supplemental/Arial.ttf",
                 "/Library/Fonts/Arial.ttf",
                 "/System/Library/Fonts/Supplemental/Helvetica.ttc",
@@ -246,18 +249,44 @@ def _draw_metric_card_pdf(
     x1, y1, x2, y2 = box
     draw.rounded_rectangle(box, radius=26, fill="#ffffff", outline="#d9e7ef", width=2)
     draw.rounded_rectangle((x1, y1, x2, y1 + 8), radius=26, fill=accent)
+    card_width = x2 - x1
+    max_label_width = card_width - 26
     label_font = _load_pdf_font(24, bold=True)
+    label_lines = _wrap_text_for_width(draw, label, label_font, max_label_width)
+    for font_size in [22, 20, 18, 16]:
+        if len(label_lines) <= 2:
+            break
+        label_font = _load_pdf_font(font_size, bold=True)
+        label_lines = _wrap_text_for_width(draw, label, label_font, max_label_width)
+
+    label_bbox = draw.textbbox((0, 0), "Ag", font=label_font)
+    label_line_height = label_bbox[3] - label_bbox[1]
+    label_gap = 2
+    label_block_height = len(label_lines) * label_line_height + max(0, len(label_lines) - 1) * label_gap
+    label_y = y1 + 18
+    current_y = label_y
+    for line in label_lines:
+        line_bbox = draw.textbbox((0, 0), line, font=label_font)
+        draw.text(
+            (x1 + (card_width - (line_bbox[2] - line_bbox[0])) / 2, current_y),
+            line,
+            font=label_font,
+            fill="#6b7c8f",
+        )
+        current_y += label_line_height + label_gap
+
     value_font = _load_pdf_font(40, bold=True)
-    label_bbox = draw.textbbox((0, 0), label, font=label_font)
     value_bbox = draw.textbbox((0, 0), value, font=value_font)
+    max_value_width = card_width - 20
+    for font_size in [38, 36, 34, 32, 30]:
+        if value_bbox[2] - value_bbox[0] <= max_value_width:
+            break
+        value_font = _load_pdf_font(font_size, bold=True)
+        value_bbox = draw.textbbox((0, 0), value, font=value_font)
+
+    value_y = max(y1 + 56, label_y + label_block_height + 8)
     draw.text(
-        (x1 + (x2 - x1 - (label_bbox[2] - label_bbox[0])) / 2, y1 + 20),
-        label,
-        font=label_font,
-        fill="#6b7c8f",
-    )
-    draw.text(
-        (x1 + (x2 - x1 - (value_bbox[2] - value_bbox[0])) / 2, y1 + 50),
+        (x1 + (card_width - (value_bbox[2] - value_bbox[0])) / 2, value_y),
         value,
         font=value_font,
         fill=value_fill,
@@ -443,139 +472,114 @@ def build_player_report_pdf(
         brand_logo.thumbnail((58, 58))
         cover.paste(brand_logo, (1620, 1112), brand_logo)
 
-    section_title = _load_pdf_font(62, bold=True)
-    h1 = _load_pdf_font(44, bold=True)
-    h2 = _load_pdf_font(32, bold=True)
-    value_font_big = _load_pdf_font(46, bold=True)
-    body_small = _load_pdf_font(30, bold=False)
-    footer_small_font = _load_pdf_font(26, bold=False)
-    comments_font = _load_pdf_font(32, bold=False)
-
     detail = Image.new("RGB", page_size, "#f8fbfd")
     _draw_vertical_gradient(detail, (248, 251, 253), (236, 245, 250))
     ddraw = ImageDraw.Draw(detail)
+    section_title = _load_pdf_font(52, bold=True)
+    h1 = _load_pdf_font(38, bold=True)
+    h2 = _load_pdf_font(26, bold=True)
+    value_font_big = _load_pdf_font(38, bold=True)
+    body_small = _load_pdf_font(24, bold=False)
 
-    ddraw.rounded_rectangle((42, 36, 1712, 188), radius=38, fill="#10364d")
-    ddraw.text((82, 72), player_name.upper(), font=section_title, fill="#ffffff")
-    ddraw.text((82, 132), f"Dorsal {dorsal_value} · {team_name} · Temporada {season_label}", font=body_small, fill="#d8e7ef")
+    ddraw.rounded_rectangle((54, 42, 1700, 170), radius=36, fill="#10364d")
+    ddraw.text((90, 72), player_name.upper(), font=section_title, fill="#ffffff")
+    ddraw.text((90, 126), f"Dorsal {dorsal_value} · {team_name} · Temporada {season_label}", font=body_small, fill="#d8e7ef")
     if crest_path and crest_path.exists():
         crest = Image.open(crest_path).convert("RGBA")
-        crest.thumbnail((124, 124))
-        detail.paste(crest, (1554, 50), crest)
+        crest.thumbnail((110, 110))
+        detail.paste(crest, (1540, 52), crest)
     if brand_logo_path and brand_logo_path.exists():
         brand_logo = Image.open(brand_logo_path).convert("RGBA")
-        brand_logo.thumbnail((124, 124))
-        detail.paste(brand_logo, (1408, 50), brand_logo)
+        brand_logo.thumbnail((110, 110))
+        detail.paste(brand_logo, (1410, 52), brand_logo)
 
-    top_meta_y = 206
+    footer_small_font = _load_pdf_font(24, bold=False)
+    top_meta_y = 184
     designer_text = f"Informe diseñado por: {designer_name}"
     coach_text = f"Entrenador: {coach_name}"
     detail_width = 1700
-    ddraw.text((82, top_meta_y), designer_text, font=footer_small_font, fill="#6b7c8f")
+    ddraw.text((86, top_meta_y), designer_text, font=footer_small_font, fill="#6b7c8f")
     coach_bbox = ddraw.textbbox((0, 0), coach_text, font=footer_small_font)
-    ddraw.text((detail_width - (coach_bbox[2] - coach_bbox[0]) - 18, top_meta_y), coach_text, font=footer_small_font, fill="#6b7c8f")
+    ddraw.text((detail_width - (coach_bbox[2] - coach_bbox[0]) - 24, top_meta_y), coach_text, font=footer_small_font, fill="#6b7c8f")
 
-    ddraw.rounded_rectangle((42, 246, 642, 760), radius=30, fill="#ffffff", outline="#d9e7ef", width=2)
-    ddraw.text((82, 288), "Ficha del jugador", font=h1, fill="#10364d")
-    bio_y = 392
-    bio_step = 132
+    ddraw.rounded_rectangle((54, 210, 630, 650), radius=28, fill="#ffffff", outline="#d9e7ef", width=2)
+    ddraw.text((86, 244), "Ficha del jugador", font=h1, fill="#10364d")
+    bio_y = 314
+    bio_step = 118
     bio_pairs = [
         ("Posición general", posicion_global),
         ("Posición específica", posicion_especifica),
     ]
     for label, value in bio_pairs:
-        ddraw.text((82, bio_y), label, font=h2, fill="#6b7c8f")
-        ddraw.text((82, bio_y + 42), value, font=value_font_big, fill="#10364d")
+        ddraw.text((86, bio_y), label, font=h2, fill="#6b7c8f")
+        ddraw.text((86, bio_y + 38), value, font=value_font_big, fill="#10364d")
         bio_y += bio_step
 
-    left_col_x = 82
-    right_col_x = 352
-    ddraw.text((left_col_x, bio_y + 12), "Año de nacimiento", font=h2, fill="#6b7c8f")
-    ddraw.text((left_col_x, bio_y + 54), fecha_nacimiento, font=value_font_big, fill="#10364d")
-    ddraw.text((right_col_x, bio_y + 12), "Edad", font=h2, fill="#6b7c8f")
-    ddraw.text((right_col_x, bio_y + 54), edad_value, font=value_font_big, fill="#10364d")
+    left_col_x = 86
+    right_col_x = 334
+    ddraw.text((left_col_x, bio_y), "Año de nacimiento", font=h2, fill="#6b7c8f")
+    ddraw.text((left_col_x, bio_y + 38), fecha_nacimiento, font=value_font_big, fill="#10364d")
+    ddraw.text((right_col_x, bio_y), "Edad", font=h2, fill="#6b7c8f")
+    ddraw.text((right_col_x, bio_y + 38), edad_value, font=value_font_big, fill="#10364d")
 
-    ddraw.rounded_rectangle((678, 246, 1712, 760), radius=30, fill="#ffffff", outline="#d9e7ef", width=2)
-    ddraw.text((724, 288), "Radar de disponibilidad y participación", font=h1, fill="#10364d")
-    _draw_radar_pdf(ddraw, (1196, 520), 176, radar_labels, radar_values)
+    ddraw.rounded_rectangle((670, 210, 1700, 650), radius=28, fill="#ffffff", outline="#d9e7ef", width=2)
+    ddraw.text((710, 244), "Radar de disponibilidad y participación", font=h1, fill="#10364d")
+    _draw_radar_pdf(ddraw, (1185, 482), 120, radar_labels, radar_values)
 
     stat_cards = metric_groups[0] + metric_groups[1] + metric_groups[2]
-    detail_stat_cards = stat_cards[:8]
-    remaining_stat_cards = stat_cards[8:]
-    card_cols = 4
-    card_w = 392
-    card_h = 150
-    start_x = 42
-    start_y = 804
-    gap_x = 22
-    gap_y = 20
-    for idx, (label, value) in enumerate(detail_stat_cards):
+    card_cols = 7
+    card_w = 220
+    card_h = 112
+    start_x = 54
+    start_y = 690
+    gap_x = 14
+    gap_y = 14
+    for idx, (label, value) in enumerate(stat_cards):
         row = idx // card_cols
         col = idx % card_cols
         x1 = start_x + col * (card_w + gap_x)
         y1 = start_y + row * (card_h + gap_y)
         _draw_metric_card_pdf(ddraw, (x1, y1, x1 + card_w, y1 + card_h), label, value)
 
-    summary = Image.new("RGB", page_size, "#f8fbfd")
-    _draw_vertical_gradient(summary, (248, 251, 253), (236, 245, 250))
-    sdraw = ImageDraw.Draw(summary)
-    sdraw.rounded_rectangle((42, 36, 1712, 188), radius=38, fill="#10364d")
-    sdraw.text((82, 72), f"Resumen ampliado · {player_name.upper()}", font=section_title, fill="#ffffff")
-    sdraw.text((82, 132), f"{team_name} · Temporada {season_label}", font=body_small, fill="#d8e7ef")
-
-    summary_stat_top = 246
-    summary_card_w = 392
-    summary_card_h = 150
-    for idx, (label, value) in enumerate(remaining_stat_cards):
-        row = idx // card_cols
-        col = idx % card_cols
-        x1 = start_x + col * (summary_card_w + gap_x)
-        y1 = summary_stat_top + row * (summary_card_h + gap_y)
-        _draw_metric_card_pdf(sdraw, (x1, y1, x1 + summary_card_w, y1 + summary_card_h), label, value)
-
-    current_y = summary_stat_top + max(1, math.ceil(max(len(remaining_stat_cards), 1) / card_cols)) * (summary_card_h + gap_y) + 18
-    if not remaining_stat_cards:
-        current_y = 246
-
     if impact_metrics:
+        impact_top = 948
         impact_width = 530
         impact_gap = 22
-        impact_x_positions = [42, 42 + impact_width + impact_gap, 42 + 2 * (impact_width + impact_gap)]
+        impact_x_positions = [54, 54 + impact_width + impact_gap, 54 + 2 * (impact_width + impact_gap)]
         for idx, (label, value, color) in enumerate(impact_metrics):
             _draw_metric_card_pdf(
-                sdraw,
-                (impact_x_positions[idx], current_y, impact_x_positions[idx] + impact_width, current_y + 150),
+                ddraw,
+                (impact_x_positions[idx], impact_top, impact_x_positions[idx] + impact_width, impact_top + 130),
                 label,
                 value,
                 accent=color,
                 value_fill=color,
             )
-        current_y += 182
-
-    comments_top = current_y
+        comments_top = 1086
+    else:
+        comments_top = 946
     comments_bottom = 1210
-    sdraw.rounded_rectangle((42, comments_top, 1712, comments_bottom), radius=24, fill="#ffffff", outline="#d9e7ef", width=2)
-    sdraw.text((82, comments_top + 28), "Comentarios del entrenador", font=h1, fill="#10364d")
+    ddraw.rounded_rectangle((54, comments_top, 1700, comments_bottom), radius=24, fill="#ffffff", outline="#d9e7ef", width=2)
+    ddraw.text((86, comments_top + 26), "Comentarios del entrenador", font=h1, fill="#10364d")
+    comments_font = _load_pdf_font(24, bold=False)
     comments = comments_text.strip() if str(comments_text).strip() else "Sin comentarios registrados."
-    comment_lines = _wrap_text_for_width(sdraw, comments, comments_font, 1545)
-    line_bbox = sdraw.textbbox((0, 0), "Ag", font=comments_font)
-    line_height = (line_bbox[3] - line_bbox[1]) + 12
-    text_start_y = comments_top + 88
-    max_lines_summary_page = max(1, int((comments_bottom - text_start_y - 28) / line_height))
-    summary_page_lines = comment_lines[:max_lines_summary_page]
-    remaining_lines = comment_lines[max_lines_summary_page:]
-    _draw_lines(sdraw, (82, text_start_y), summary_page_lines, comments_font, "#10364d", line_gap=12)
+    comment_lines = _wrap_text_for_width(ddraw, comments, comments_font, 1540)
+    line_bbox = ddraw.textbbox((0, 0), "Ag", font=comments_font)
+    line_height = (line_bbox[3] - line_bbox[1]) + 8
+    text_start_y = comments_top + 74
+    max_lines_second_page = max(1, int((comments_bottom - text_start_y - 20) / line_height))
+    second_page_lines = comment_lines[:max_lines_second_page]
+    remaining_lines = comment_lines[max_lines_second_page:]
+    _draw_lines(ddraw, (86, text_start_y), second_page_lines, comments_font, "#10364d", line_gap=8)
 
-    pdf_pages = [cover.convert("RGB"), detail.convert("RGB"), summary.convert("RGB")]
+    pdf_pages = [cover.convert("RGB"), detail.convert("RGB")]
     if remaining_lines:
         extra_page = Image.new("RGB", page_size, "#f8fbfd")
         _draw_vertical_gradient(extra_page, (248, 251, 253), (236, 245, 250))
         extra_draw = ImageDraw.Draw(extra_page)
-        extra_draw.rounded_rectangle((42, 36, 1712, 188), radius=38, fill="#10364d")
-        extra_draw.text((82, 72), "Comentarios del entrenador (continuación)", font=section_title, fill="#ffffff")
-        extra_draw.text((82, 132), player_name.upper(), font=body_small, fill="#d8e7ef")
-        extra_draw.rounded_rectangle((42, 246, 1712, 1186), radius=28, fill="#ffffff", outline="#d9e7ef", width=2)
-        _draw_lines(extra_draw, (82, 304), remaining_lines, comments_font, "#10364d", line_gap=12)
+        extra_draw.rounded_rectangle((54, 54, 1700, 1186), radius=28, fill="#ffffff", outline="#d9e7ef", width=2)
+        extra_draw.text((86, 90), "Comentarios del entrenador (continuación)", font=h1, fill="#10364d")
+        _draw_lines(extra_draw, (86, 156), remaining_lines, comments_font, "#10364d", line_gap=8)
         pdf_pages.append(extra_page.convert("RGB"))
 
     output = BytesIO()
