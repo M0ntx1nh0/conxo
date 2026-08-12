@@ -1879,12 +1879,16 @@ def render_equipo(data):
                 )
             scatter_fig.add_annotation(
                 x=float(row["Goles Contr"]),
-                y=float(row["Goles Fav"]) - 1.0,
-                text=f"{int(row['Posicion'])}<br>{row['Equipo']}",
+                y=float(row["Goles Fav"]) - 0.72,
+                text=f"{int(row['Posicion'])}",
                 showarrow=False,
                 font=dict(size=10, color="#10364d"),
                 align="center",
                 yanchor="top",
+                bgcolor="rgba(255,255,255,0.86)",
+                bordercolor="rgba(217,231,239,0.9)",
+                borderwidth=1,
+                borderpad=2,
             )
         scatter_fig.add_hline(y=avg_gf, line_dash="dash", line_color="#a9b4be")
         scatter_fig.add_vline(x=avg_gc, line_dash="dash", line_color="#a9b4be")
@@ -1912,8 +1916,8 @@ def render_equipo(data):
             xaxis_title="Goles en contra",
             yaxis_title="Goles a favor",
             template="plotly_white",
-            margin=dict(l=20, r=20, t=55, b=20),
-            height=520,
+            margin=dict(l=20, r=20, t=55, b=32),
+            height=560,
             plot_bgcolor=PLOT_CARD_BG,
             paper_bgcolor=PLOT_PAPER_BG,
             font=dict(color=PLOT_LINE),
@@ -2000,8 +2004,8 @@ def render_equipo(data):
             xaxis_title="GF - GC",
             yaxis_title="",
             template="plotly_white",
-            margin=dict(l=20, r=20, t=55, b=20),
-            height=520,
+            margin=dict(l=20, r=20, t=55, b=26),
+            height=560,
             plot_bgcolor=PLOT_CARD_BG,
             paper_bgcolor=PLOT_PAPER_BG,
             font=dict(color=PLOT_LINE),
@@ -2221,9 +2225,9 @@ def render_plantilla(data):
                 zmax=90,
                 text=minutes_matrix.values,
                 texttemplate="%{text}",
-                textfont=dict(color="#10364d", size=10),
-                xgap=2,
-                ygap=2,
+                textfont=dict(color="#10364d", size=9),
+                xgap=3,
+                ygap=3,
                 hovertemplate="Jugador: %{y}<br>Jornada: %{x}<br>Minutos: %{z}<extra></extra>",
                 showscale=False,
             ),
@@ -2244,9 +2248,9 @@ def render_plantilla(data):
                 zmax=max(int(total_minutes.max()), 1),
                 text=total_minutes.to_numpy().reshape(-1, 1),
                 texttemplate="%{text}",
-                textfont=dict(color="#10364d", size=10),
-                xgap=2,
-                ygap=2,
+                textfont=dict(color="#10364d", size=9),
+                xgap=3,
+                ygap=3,
                 hovertemplate="Jugador: %{y}<br>Total minutos: %{z}<extra></extra>",
                 showscale=False,
             ),
@@ -2256,15 +2260,17 @@ def render_plantilla(data):
         fig_heat_minutes.update_layout(
             title="Minutos disputados por jornada",
             template="plotly_white",
-            margin=dict(l=20, r=20, t=60, b=20),
-            height=max(520, len(player_order) * 30),
+            margin=dict(l=20, r=20, t=60, b=24),
+            height=max(640, len(player_order) * 38),
             plot_bgcolor="#f8fbfd",
             paper_bgcolor="#ffffff",
         )
         fig_heat_minutes.update_xaxes(
             side="top",
             showgrid=False,
+            tickangle=0,
             tickfont=dict(size=10, color="#10364d"),
+            automargin=True,
             row=1,
             col=1,
         )
@@ -2272,18 +2278,21 @@ def render_plantilla(data):
             side="top",
             showgrid=False,
             tickfont=dict(size=10, color="#10364d"),
+            automargin=True,
             row=1,
             col=2,
         )
         fig_heat_minutes.update_yaxes(
             autorange="reversed",
             tickfont=dict(size=10, color="#10364d"),
+            automargin=True,
             row=1,
             col=1,
         )
         fig_heat_minutes.update_yaxes(
             autorange="reversed",
             tickfont=dict(size=10, color="#10364d"),
+            automargin=True,
             row=1,
             col=2,
         )
@@ -2348,7 +2357,7 @@ def render_plantilla(data):
         fig_change_matrix = make_subplots(
             rows=1,
             cols=3,
-            column_widths=[0.14, 0.07, 0.79],
+            column_widths=[0.17, 0.1, 0.73],
             shared_yaxes=True,
             horizontal_spacing=0.01,
         )
@@ -2363,8 +2372,8 @@ def render_plantilla(data):
                 ],
                 zmin=0,
                 zmax=1,
-                xgap=8,
-                ygap=8,
+                xgap=10,
+                ygap=10,
                 hoverinfo="skip",
                 showscale=False,
                 hoverongaps=False,
@@ -2385,8 +2394,8 @@ def render_plantilla(data):
                 ],
                 zmin=0,
                 zmax=max(int(summary_df.values.max()), 1),
-                xgap=8,
-                ygap=8,
+                xgap=10,
+                ygap=10,
                 hovertemplate="Jugador: %{y}<br>%{x}: %{z}<extra></extra>",
                 showscale=False,
                 hoverongaps=False,
@@ -2410,8 +2419,8 @@ def render_plantilla(data):
                 ],
                 zmin=0,
                 zmax=max(int(change_matrix.values.max()), 1),
-                xgap=8,
-                ygap=8,
+                xgap=10,
+                ygap=10,
                 hovertemplate=(
                     "Jugador sustituido: %{y}<br>"
                     "Entró por él: %{x}<br>"
@@ -2434,8 +2443,8 @@ def render_plantilla(data):
                 ],
                 zmin=0,
                 zmax=1,
-                xgap=8,
-                ygap=8,
+                xgap=10,
+                ygap=10,
                 hoverinfo="skip",
                 showscale=False,
                 hoverongaps=False,
@@ -2445,8 +2454,8 @@ def render_plantilla(data):
         )
         fig_change_matrix.update_layout(
             template="plotly_white",
-            margin=dict(l=14, r=12, t=248, b=20),
-            height=max(620, len(player_order_plain) * 34),
+            margin=dict(l=14, r=12, t=212, b=20),
+            height=max(760, len(player_order_plain) * 42),
             plot_bgcolor="#f8fbfd",
             paper_bgcolor="rgba(248,251,253,0)",
             font=dict(color="#10364d"),
@@ -2547,13 +2556,13 @@ def render_plantilla(data):
                 font=dict(size=8.5, color="#10364d", family="Arial Black"),
             )
 
-        for col_name in player_order_plain:
+        for idx, col_name in enumerate(player_order_plain, start=1):
             fig_change_matrix.add_annotation(
                 x=col_name,
                 y=1.02,
                 xref="x3",
                 yref="paper",
-                text=_format_matrix_col_label(col_name),
+                text=f"<b>{idx}</b>",
                 showarrow=False,
                 textangle=-90,
                 xanchor="center",
@@ -2563,7 +2572,7 @@ def render_plantilla(data):
                 bordercolor="#d7e5ee",
                 borderwidth=1,
                 borderpad=3,
-                font=dict(size=6.2, color="#10364d", family="Arial Black"),
+                font=dict(size=8.2, color="#10364d", family="Arial Black"),
             )
 
         for y_label, row_vals in zip(summary_df.index.tolist(), summary_df.values):
@@ -2577,7 +2586,7 @@ def render_plantilla(data):
                     yref="y2",
                     text=str(int(cell_value)),
                     showarrow=False,
-                    font=dict(size=10, color=text_color, family="Arial Black"),
+                    font=dict(size=11, color=text_color, family="Arial Black"),
                 )
 
         for y_label, row_vals in zip(change_matrix.index.tolist(), change_matrix.values):
@@ -2593,7 +2602,7 @@ def render_plantilla(data):
                     yref="y3",
                     text=str(int(cell_value)),
                     showarrow=False,
-                    font=dict(size=10, color=text_color, family="Arial Black"),
+                    font=dict(size=11, color=text_color, family="Arial Black"),
                 )
 
         st.plotly_chart(fig_change_matrix, use_container_width=True)
