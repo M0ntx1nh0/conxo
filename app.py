@@ -2929,6 +2929,9 @@ def main():
             background: linear-gradient(90deg, rgba(16, 54, 77, 0.18) 0%, rgba(16, 54, 77, 0.05) 100%);
             transform: translateY(1px);
         }
+        .mobile-sidebar-hint {
+            display: none;
+        }
         .app-hero-banner {
             position: relative;
             overflow: visible;
@@ -3046,6 +3049,33 @@ def main():
             pointer-events: none;
         }
         @media (max-width: 980px) {
+            .mobile-sidebar-hint {
+                position: fixed;
+                top: 4.65rem;
+                left: 0.55rem;
+                z-index: 1000;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
+                max-width: min(230px, calc(100vw - 1.1rem));
+                padding: 0.5rem 0.72rem;
+                border-radius: 14px;
+                background: rgba(16, 54, 77, 0.95);
+                color: #f8fbfd;
+                font-size: 0.76rem;
+                font-weight: 700;
+                line-height: 1.25;
+                box-shadow: 0 12px 24px rgba(16, 54, 77, 0.22);
+                pointer-events: none;
+                backdrop-filter: blur(8px);
+            }
+            .mobile-sidebar-hint::before {
+                content: "⇠";
+                font-size: 0.92rem;
+                line-height: 1;
+                color: #d8b24d;
+                flex-shrink: 0;
+            }
             .app-hero-shell {
                 padding-right: 0;
                 padding-bottom: 1rem;
@@ -4538,6 +4568,13 @@ def main():
             }
         }
         @media (max-width: 480px) {
+            .mobile-sidebar-hint {
+                top: 4.35rem;
+                left: 0.45rem;
+                max-width: min(210px, calc(100vw - 0.9rem));
+                padding: 0.46rem 0.65rem;
+                font-size: 0.72rem;
+            }
             .page-section-title {
                 font-size: 1.28rem;
             }
@@ -4624,6 +4661,10 @@ def main():
 
     data = load_data()
     render_header(data["team_name"])
+    st.markdown(
+        '<div class="mobile-sidebar-hint">Despliega aquí el menú para navegar por las secciones</div>',
+        unsafe_allow_html=True,
+    )
     if "section" not in st.session_state:
         st.session_state["section"] = "General"
     section = render_sidebar_navigation()
