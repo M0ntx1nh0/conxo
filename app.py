@@ -3834,10 +3834,14 @@ def main():
         }
         .scroll-table-wrap {
             overflow-x: auto;
-            overflow-y: hidden;
+            overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: thin;
             padding-bottom: 0.2rem;
+            max-height: min(70vh, 620px);
+            border: 1px solid #d9e7ef;
+            border-radius: 20px;
+            background: #ffffff;
         }
         .scroll-table {
             border-collapse: separate;
@@ -3863,6 +3867,7 @@ def main():
             background: linear-gradient(180deg, #10364d 0%, #1b5977 100%);
             color: #f8fbfd;
             font-weight: 800;
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(16, 54, 77, 0.12);
         }
         .scroll-table-col-head {
             min-width: 70px;
@@ -4374,6 +4379,9 @@ def main():
                 padding: 0.54rem 0.56rem;
                 font-size: 0.78rem;
             }
+            .scroll-table-wrap {
+                max-height: min(64vh, 520px);
+            }
             .scroll-table-sticky-player {
                 min-width: 190px;
                 max-width: 190px;
@@ -4541,6 +4549,9 @@ def main():
             .scroll-table-sticky-player {
                 min-width: 168px;
                 max-width: 168px;
+            }
+            .scroll-table-wrap {
+                max-height: min(58vh, 460px);
             }
             .scroll-table-sticky-total {
                 left: 168px;
