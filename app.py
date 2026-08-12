@@ -712,18 +712,10 @@ def build_change_scroll_table(summary_df: pd.DataFrame, change_matrix: pd.DataFr
 
     rows = []
     for row_label in summary_df.index.tolist():
-        total_value, full_start_value, sub_in_value = [int(value) for value in summary_df.loc[row_label].tolist()]
         cells = [
-            '<td class="scroll-table-cell scroll-table-sticky-player">'
-            f'<div class="scroll-table-player-name">{html.escape(str(row_label))}</div>'
-            '<div class="scroll-table-player-summary" aria-hidden="true">'
-            f'<span><strong>T</strong> {total_value}</span>'
-            f'<span><strong>TC</strong> {full_start_value}</span>'
-            f'<span><strong>ES</strong> {sub_in_value}</span>'
-            "</div>"
-            "</td>"
+            f'<td class="scroll-table-cell scroll-table-sticky-player"><div class="scroll-table-player-name">{html.escape(str(row_label))}</div></td>'
         ]
-        summary_values = [total_value, full_start_value, sub_in_value]
+        summary_values = [int(value) for value in summary_df.loc[row_label].tolist()]
         sticky_classes = [
             "scroll-table-sticky-summary-1",
             "scroll-table-sticky-summary-2",
@@ -3922,23 +3914,6 @@ def main():
             font-weight: 700;
             color: #10364d;
         }
-        .scroll-table-player-summary {
-            display: none;
-            margin-top: 0.38rem;
-            gap: 0.35rem;
-            flex-wrap: wrap;
-            font-size: 0.68rem;
-            color: #4d6676;
-        }
-        .scroll-table-player-summary span {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.18rem;
-            padding: 0.14rem 0.34rem;
-            border-radius: 999px;
-            background: #edf4f8;
-            white-space: nowrap;
-        }
         .scroll-table--changes .scroll-table-sticky-summary-1,
         .scroll-table--changes .scroll-table-sticky-summary-2,
         .scroll-table--changes .scroll-table-sticky-summary-3 {
@@ -4428,6 +4403,14 @@ def main():
                 min-width: 176px;
                 max-width: 176px;
             }
+            .scroll-table--changes .scroll-table-sticky-summary-1,
+            .scroll-table--changes .scroll-table-sticky-summary-2,
+            .scroll-table--changes .scroll-table-sticky-summary-3 {
+                position: static;
+                min-width: 62px;
+                width: 62px;
+                max-width: 62px;
+            }
             .scroll-table-col-head {
                 min-width: 62px;
             }
@@ -4560,26 +4543,15 @@ def main():
             }
             .scroll-table--changes .scroll-table-sticky-summary-1,
             .scroll-table--changes .scroll-table-sticky-summary-2,
-            .scroll-table--changes .scroll-table-sticky-summary-3,
-            .scroll-table--changes .scroll-table-summary-head {
-                display: none;
-            }
-            .scroll-table--changes .scroll-table-player-summary {
-                display: flex;
-            }
-            .scroll-table-sticky-summary-1 { left: 168px; }
-            .scroll-table-sticky-summary-2 { left: 262px; }
-            .scroll-table-sticky-summary-3 { left: 356px; }
-            .scroll-table--changes .scroll-table-sticky-summary-1,
-            .scroll-table--changes .scroll-table-sticky-summary-2,
             .scroll-table--changes .scroll-table-sticky-summary-3 {
+                position: static;
                 min-width: 58px;
                 width: 58px;
                 max-width: 58px;
             }
-            .scroll-table--changes .scroll-table-sticky-summary-1 { left: 168px; }
-            .scroll-table--changes .scroll-table-sticky-summary-2 { left: 226px; }
-            .scroll-table--changes .scroll-table-sticky-summary-3 { left: 284px; }
+            .scroll-table-sticky-summary-1 { left: 168px; }
+            .scroll-table-sticky-summary-2 { left: 262px; }
+            .scroll-table-sticky-summary-3 { left: 356px; }
             .scroll-table-summary-head span {
                 min-height: 102px;
                 font-size: 0.58rem;
