@@ -704,11 +704,10 @@ def build_change_scroll_table(summary_df: pd.DataFrame, change_matrix: pd.DataFr
     summary_max = int(summary_df.values.max()) if summary_df.size else 0
     matrix_max = int(change_matrix.values.max()) if change_matrix.size else 0
     matrix_headers = []
-    legend_items = []
-    for idx, player_name in enumerate(change_matrix.columns.tolist(), start=1):
-        matrix_headers.append(f'<th class="scroll-table-head scroll-table-col-head">{idx}</th>')
-        legend_items.append(
-            f'<span class="scroll-table-legend-item"><b>{idx}.</b> {html.escape(str(player_name))}</span>'
+    for player_name in change_matrix.columns.tolist():
+        matrix_headers.append(
+            '<th class="scroll-table-head scroll-table-col-head scroll-table-player-head">'
+            f'<span>{html.escape(str(player_name))}</span></th>'
         )
 
     rows = []
@@ -749,11 +748,7 @@ def build_change_scroll_table(summary_df: pd.DataFrame, change_matrix: pd.DataFr
         f"{''.join(matrix_headers)}"
         "</tr></thead>"
         f"<tbody>{''.join(rows)}</tbody>"
-        "</table></div>"
-        '<div class="scroll-table-legend">'
-        '<div class="scroll-table-legend-title">Entrantes</div>'
-        f'<div class="scroll-table-legend-list">{"".join(legend_items)}</div>'
-        "</div></div>"
+        "</table></div></div>"
     )
 
 
@@ -1014,41 +1009,67 @@ def load_data():
 
 
 def build_bubble_matrix(df: pd.DataFrame, title: str, colorscale, reverse: bool = False):
+    chart_type_labels = {
+        "Apertura de marcador": "Apertura<br>marcador",
+        "Igualar marcador": "Igualar<br>marcador",
+        "Ponerse por delante": "Ponerse por<br>delante",
+        "Reducir distancia": "Reducir<br>distancia",
+        "Ampliar Ventaja": "Ampliar<br>ventaja",
+        "Victoria": "Victoria",
+    }
     frame = pd.DataFrame(
         [(band[2], event) for band in TIME_BANDS for event in EVENT_ORDER],
         columns=["Franja", "Tipo"],
     ).merge(df[["Franja", "Tipo", "Total"]], on=["Franja", "Tipo"], how="left")
     frame["Total"] = frame["Total"].fillna(0)
+    frame["TipoLabel"] = frame["Tipo"].map(chart_type_labels).fillna(frame["Tipo"])
+    frame["BubbleText"] = frame["Total"].apply(lambda value: str(int(value)) if int(value) > 0 else "")
 
     fig = px.scatter(
         frame,
         x="Franja",
-        y="Tipo",
+        y="TipoLabel",
         size="Total",
         color="Total",
-        size_max=42,
+        size_max=34,
         color_continuous_scale=colorscale,
-        text=frame["Total"].astype(int).astype(str),
+        text="BubbleText",
     )
     fig.update_traces(
         textposition="middle center",
-        marker=dict(line=dict(color="#17324d", width=1)),
-        hovertemplate="<b>%{y}</b><br>Franja: %{x}<br>Goles: %{marker.color}<extra></extra>",
+        textfont=dict(size=11),
+        marker=dict(line=dict(color="#17324d", width=0.8)),
+        hovertemplate="<b>%{customdata[0]}</b><br>Franja: %{x}<br>Goles: %{marker.color}<extra></extra>",
+        customdata=np.stack([frame["Tipo"]], axis=-1),
     )
     fig.update_layout(
         title=title,
         xaxis_title="Franja de tiempo",
         yaxis_title="Tipo de acción",
         template="plotly_white",
-        margin=dict(l=20, r=20, t=50, b=20),
-        height=430,
+        margin=dict(l=20, r=20, t=56, b=26),
+        height=520,
         coloraxis_colorbar_title="Goles",
         plot_bgcolor=PLOT_CARD_BG,
         paper_bgcolor=PLOT_PAPER_BG,
         font=dict(color=PLOT_LINE),
     )
-    fig.update_xaxes(showgrid=True, gridcolor=PLOT_GRID, zeroline=False, linecolor=PLOT_AXIS)
-    fig.update_yaxes(showgrid=True, gridcolor=PLOT_GRID, zeroline=False, linecolor=PLOT_AXIS)
+    fig.update_xaxes(
+        showgrid=True,
+        gridcolor=PLOT_GRID,
+        zeroline=False,
+        linecolor=PLOT_AXIS,
+        tickfont=dict(size=11),
+        automargin=True,
+    )
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor=PLOT_GRID,
+        zeroline=False,
+        linecolor=PLOT_AXIS,
+        tickfont=dict(size=11),
+        automargin=True,
+    )
     if reverse:
         fig.update_yaxes(autorange="reversed")
     return fig
@@ -3889,34 +3910,24 @@ def main():
         .scroll-table thead .scroll-table-sticky-summary-3 {
             z-index: 11;
         }
-        .scroll-table-legend {
-            margin-top: 0.78rem;
-            padding-top: 0.7rem;
-            border-top: 1px solid #e6eef4;
+        .scroll-table-player-head {
+            min-width: 84px;
+            width: 84px;
+            max-width: 84px;
+            padding: 0;
+            vertical-align: bottom;
         }
-        .scroll-table-legend-title {
-            color: #6b7c8f;
-            font-size: 0.78rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.45rem;
-        }
-        .scroll-table-legend-list {
+        .scroll-table-player-head span {
             display: flex;
-            flex-wrap: wrap;
-            gap: 0.45rem 0.6rem;
-        }
-        .scroll-table-legend-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.28rem;
-            padding: 0.36rem 0.52rem;
-            border-radius: 999px;
-            background: #eef4f8;
-            color: #10364d;
-            font-size: 0.78rem;
-            font-weight: 700;
+            align-items: flex-end;
+            justify-content: center;
+            min-height: 150px;
+            padding: 0.45rem 0.2rem 0.55rem;
+            font-size: 0.72rem;
+            line-height: 1.05;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-align: left;
         }
         .player-profile-shell {
             background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,253,0.98) 100%);
@@ -4347,9 +4358,14 @@ def main():
             .scroll-table-col-head {
                 min-width: 62px;
             }
-            .scroll-table-legend-list {
-                display: grid;
-                grid-template-columns: 1fr;
+            .scroll-table-player-head {
+                min-width: 72px;
+                width: 72px;
+                max-width: 72px;
+            }
+            .scroll-table-player-head span {
+                min-height: 132px;
+                font-size: 0.68rem;
             }
             .player-profile-shell {
                 border-radius: 20px;
@@ -4468,6 +4484,15 @@ def main():
             .scroll-table-sticky-summary-1 { left: 168px; }
             .scroll-table-sticky-summary-2 { left: 262px; }
             .scroll-table-sticky-summary-3 { left: 356px; }
+            .scroll-table-player-head {
+                min-width: 68px;
+                width: 68px;
+                max-width: 68px;
+            }
+            .scroll-table-player-head span {
+                min-height: 118px;
+                font-size: 0.64rem;
+            }
             .timeline-match-svg {
                 width: 1360px;
                 min-width: 1360px;
