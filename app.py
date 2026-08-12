@@ -3047,6 +3047,15 @@ def main():
         """
         <style>
         .block-container {padding-top: 1.5rem; padding-bottom: 2rem;}
+        section.main > div.block-container {
+            max-width: 1440px;
+        }
+        section.main div[data-testid="stHorizontalBlock"] {
+            gap: 0.95rem;
+        }
+        section.main div[data-testid="column"] {
+            min-width: 0;
+        }
         .stApp {
             background:
                 radial-gradient(circle at top right, rgba(255, 214, 102, 0.14), transparent 24%),
@@ -3247,6 +3256,56 @@ def main():
             .app-hero-copy {
                 text-align: left;
                 max-width: none;
+            }
+        }
+        @media (max-width: 1120px) {
+            section.main div[data-testid="stHorizontalBlock"] {
+                flex-wrap: wrap;
+                gap: 0.8rem;
+            }
+            section.main div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+                flex: 1 1 320px;
+                min-width: min(100%, 320px);
+            }
+            .page-section-title {
+                letter-spacing: 0.04em;
+            }
+            .stat-card {
+                min-height: 108px;
+            }
+            .stat-card-value {
+                font-size: 1.7rem;
+            }
+            .player-top-grid {
+                grid-template-columns: 1fr;
+            }
+            .player-photo-box {
+                min-height: 170px;
+            }
+            .player-metric-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .player-impact-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .matrix-insight-grid {
+                grid-template-columns: 1fr;
+            }
+            .timeline-log-row {
+                grid-template-columns: 102px 1fr;
+                align-items: start;
+            }
+            .timeline-log-detail {
+                grid-column: 1 / -1;
+                padding-top: 0.2rem;
+            }
+            .classification-card {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .classification-header,
+            .classification-row {
+                min-width: 880px;
             }
         }
         div[data-testid="stMetric"] {
@@ -4186,6 +4245,254 @@ def main():
         .classification-stat {
             text-align: center;
             font-weight: 700;
+        }
+        @media (max-width: 768px) {
+            .block-container {
+                padding-top: 1rem;
+                padding-bottom: 1.3rem;
+            }
+            section.main > div.block-container {
+                padding-left: 0.8rem;
+                padding-right: 0.8rem;
+            }
+            section.main div[data-testid="stHorizontalBlock"] {
+                gap: 0.72rem;
+            }
+            section.main div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+                flex: 1 1 100%;
+                min-width: 100%;
+            }
+            div[data-testid="stTabs"] [data-baseweb="tab-list"] {
+                flex-wrap: wrap;
+                gap: 0.45rem;
+            }
+            div[data-testid="stTabs"] [data-baseweb="tab"] {
+                padding-left: 0.8rem;
+                padding-right: 0.8rem;
+                min-height: 44px;
+            }
+            .page-section-title {
+                font-size: 1.45rem;
+                line-height: 1.05;
+                letter-spacing: 0.03em;
+                margin-bottom: 0.8rem;
+            }
+            .page-subsection-title span {
+                font-size: 1rem;
+            }
+            .app-hero-banner {
+                border-radius: 22px;
+                min-height: auto;
+                padding: 1rem 1rem 1.1rem;
+            }
+            .app-hero-kicker {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+            .app-hero-title {
+                font-size: clamp(2rem, 10vw, 2.7rem);
+                line-height: 0.98;
+            }
+            .app-hero-subtitle {
+                font-size: 0.92rem;
+                line-height: 1.4;
+            }
+            .app-hero-crest-wrap {
+                width: 108px;
+                height: 108px;
+                margin-top: -0.75rem;
+            }
+            .stat-card,
+            .stat-card.compact-card,
+            .stat-card.detail-card {
+                min-height: auto;
+                padding: 0.9rem 0.9rem 1rem;
+                border-radius: 16px;
+            }
+            .stat-card-label,
+            .stat-card.compact-card .stat-card-label {
+                font-size: 0.88rem;
+                margin-bottom: 0.6rem;
+            }
+            .stat-card-value,
+            .stat-card.compact-card .stat-card-value {
+                font-size: 1.45rem;
+                line-height: 1.05;
+                word-break: break-word;
+            }
+            .stat-card.detail-card .stat-card-value {
+                white-space: normal;
+                overflow: visible;
+                text-overflow: unset;
+                line-height: 1.25;
+            }
+            .match-hero {
+                min-height: auto;
+                padding: 1rem 0.9rem;
+                border-radius: 18px;
+            }
+            .match-hero-score {
+                font-size: 2.2rem;
+            }
+            .match-hero-fixture {
+                font-size: 1rem;
+                line-height: 1.25;
+            }
+            .match-hero-status {
+                font-size: 0.86rem;
+                line-height: 1.35;
+            }
+            .player-chip,
+            .goal-chip,
+            .change-chip {
+                border-radius: 16px;
+                padding: 0.75rem;
+            }
+            .player-chip-name,
+            .goal-chip-name {
+                font-size: 0.95rem;
+            }
+            .goal-chip-type,
+            .player-chip-meta,
+            .change-chip-out,
+            .change-chip-in {
+                font-size: 0.82rem;
+                line-height: 1.35;
+            }
+            .timeline-svg-wrap {
+                margin: 0 -0.2rem;
+                padding-bottom: 0.35rem;
+            }
+            .timeline-log-card {
+                gap: 0.7rem;
+            }
+            .timeline-log-row {
+                grid-template-columns: 1fr;
+                gap: 0.3rem;
+                padding: 0.78rem 0.82rem;
+            }
+            .timeline-log-minute,
+            .timeline-log-action,
+            .timeline-log-detail {
+                white-space: normal;
+            }
+            .timeline-log-action {
+                font-size: 0.88rem;
+            }
+            .timeline-log-detail {
+                font-size: 0.84rem;
+                padding-top: 0.08rem;
+            }
+            .player-profile-shell {
+                border-radius: 20px;
+                padding: 0.9rem;
+            }
+            .player-photo-box {
+                min-height: 140px;
+            }
+            .player-bio-card {
+                border-radius: 18px;
+                padding: 0.95rem;
+            }
+            .player-bio-dorsal {
+                min-width: 46px;
+                height: 46px;
+                font-size: 1.2rem;
+                margin-bottom: 0.65rem;
+            }
+            .player-bio-name {
+                font-size: 1.55rem;
+                margin-bottom: 0.8rem;
+            }
+            .player-bio-grid {
+                grid-template-columns: 1fr;
+                gap: 0.65rem;
+            }
+            .player-metric-grid,
+            .player-impact-grid {
+                grid-template-columns: 1fr;
+                gap: 0.7rem;
+            }
+            .player-metric-card,
+            .player-impact-card {
+                min-height: auto;
+                padding: 0.85rem 0.8rem 0.92rem;
+            }
+            .player-metric-value,
+            .player-impact-value {
+                font-size: 1.35rem;
+            }
+            .player-svg-card {
+                padding: 0.8rem 0.75rem;
+                border-radius: 18px;
+            }
+            .player-svg-card svg {
+                min-width: 540px;
+            }
+            .player-radar-card {
+                padding: 0.65rem 0.65rem 0.2rem;
+                border-radius: 18px;
+            }
+            .ranking-card-title,
+            .matrix-insight-card-title {
+                font-size: 0.9rem;
+                padding: 0.78rem 0.88rem;
+            }
+            .ranking-item,
+            .matrix-insight-item {
+                align-items: flex-start;
+            }
+            .ranking-value-wrap {
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                row-gap: 0.12rem;
+            }
+            .matrix-insight-main {
+                font-size: 0.9rem;
+            }
+            .matrix-insight-sub {
+                font-size: 0.78rem;
+            }
+            div[data-testid="stSelectbox"] [data-baseweb="select"] > div {
+                min-height: 52px;
+                border-radius: 14px;
+            }
+            div[data-testid="stSelectbox"] [data-baseweb="select"] span {
+                font-size: 1rem;
+            }
+            div[data-testid="stTextArea"] textarea {
+                min-height: 130px;
+            }
+            div[data-testid="stDownloadButton"] > button[kind="primary"] {
+                width: 100%;
+                min-height: 48px;
+            }
+        }
+        @media (max-width: 480px) {
+            .page-section-title {
+                font-size: 1.28rem;
+            }
+            .app-hero-title {
+                font-size: 1.8rem;
+            }
+            .app-hero-subtitle {
+                font-size: 0.87rem;
+            }
+            .player-bio-name {
+                font-size: 1.35rem;
+            }
+            .stat-card-value,
+            .stat-card.compact-card .stat-card-value,
+            .player-metric-value,
+            .player-impact-value {
+                font-size: 1.22rem;
+            }
+            .timeline-log-minute {
+                font-size: 0.84rem;
+            }
+            .player-svg-card svg {
+                min-width: 500px;
+            }
         }
         </style>
         """,
