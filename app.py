@@ -4407,9 +4407,17 @@ def main():
             .scroll-table--changes .scroll-table-sticky-summary-2,
             .scroll-table--changes .scroll-table-sticky-summary-3 {
                 position: static;
+                left: auto;
                 min-width: 62px;
                 width: 62px;
                 max-width: 62px;
+            }
+            .scroll-table--changes thead .scroll-table-sticky-summary-1,
+            .scroll-table--changes thead .scroll-table-sticky-summary-2,
+            .scroll-table--changes thead .scroll-table-sticky-summary-3 {
+                position: static;
+                left: auto;
+                z-index: auto;
             }
             .scroll-table-col-head {
                 min-width: 62px;
@@ -4545,9 +4553,17 @@ def main():
             .scroll-table--changes .scroll-table-sticky-summary-2,
             .scroll-table--changes .scroll-table-sticky-summary-3 {
                 position: static;
+                left: auto;
                 min-width: 58px;
                 width: 58px;
                 max-width: 58px;
+            }
+            .scroll-table--changes thead .scroll-table-sticky-summary-1,
+            .scroll-table--changes thead .scroll-table-sticky-summary-2,
+            .scroll-table--changes thead .scroll-table-sticky-summary-3 {
+                position: static;
+                left: auto;
+                z-index: auto;
             }
             .scroll-table-sticky-summary-1 { left: 168px; }
             .scroll-table-sticky-summary-2 { left: 262px; }
