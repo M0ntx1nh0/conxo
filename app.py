@@ -3919,6 +3919,15 @@ def main():
             font-weight: 700;
             color: #10364d;
         }
+        .scroll-table--changes .scroll-table-sticky-player {
+            overflow: hidden;
+        }
+        .scroll-table--changes .scroll-table-player-name {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         .scroll-table--changes .scroll-table-sticky-summary-1,
         .scroll-table--changes .scroll-table-sticky-summary-2,
         .scroll-table--changes .scroll-table-sticky-summary-3 {
@@ -4411,14 +4420,17 @@ def main():
                 min-width: 176px;
                 max-width: 176px;
             }
+            .scroll-table--changes .scroll-table-player-name {
+                font-size: 0.76rem;
+            }
             .scroll-table--changes .scroll-table-sticky-summary-1,
             .scroll-table--changes .scroll-table-sticky-summary-2,
             .scroll-table--changes .scroll-table-sticky-summary-3 {
                 position: static;
                 left: auto;
-                min-width: 62px;
-                width: 62px;
-                max-width: 62px;
+                min-width: 72px;
+                width: 72px;
+                max-width: 72px;
             }
             .scroll-table--changes thead .scroll-table-sticky-summary-1,
             .scroll-table--changes thead .scroll-table-sticky-summary-2,
@@ -4560,14 +4572,17 @@ def main():
                 min-width: 158px;
                 max-width: 158px;
             }
+            .scroll-table--changes .scroll-table-player-name {
+                font-size: 0.72rem;
+            }
             .scroll-table--changes .scroll-table-sticky-summary-1,
             .scroll-table--changes .scroll-table-sticky-summary-2,
             .scroll-table--changes .scroll-table-sticky-summary-3 {
                 position: static;
                 left: auto;
-                min-width: 58px;
-                width: 58px;
-                max-width: 58px;
+                min-width: 68px;
+                width: 68px;
+                max-width: 68px;
             }
             .scroll-table--changes thead .scroll-table-sticky-summary-1,
             .scroll-table--changes thead .scroll-table-sticky-summary-2,
