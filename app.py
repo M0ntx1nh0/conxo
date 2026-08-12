@@ -1207,10 +1207,10 @@ def render_match_timeline(events, rival_name):
         rival_df["level"] = assign_levels(rival_df)
 
     max_minute = max(90, int(timeline_df["minute"].max()))
-    width = 2320
-    height = 700
-    margin_left = 240
-    margin_right = 520
+    width = 1840
+    height = 760
+    margin_left = 190
+    margin_right = 250
     axis_y = 340
     top_base = 235
     bottom_base = 455
@@ -1224,15 +1224,15 @@ def render_match_timeline(events, rival_name):
         return margin_left + (float(minute) / float(max_minute)) * usable_width
 
     svg_parts = [
-        f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" xmlns="http://www.w3.org/2000/svg">',
+        f'<svg class="timeline-match-svg" viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet">',
         '<style>'
-        '.axis{stroke:#8ea3b3;stroke-width:2;}'
-        '.tick{stroke:#dbe5ed;stroke-width:1;}'
-        '.label{fill:#10364d;font:800 16px Arial, sans-serif;}'
-        '.sub{fill:#6b7c8f;font:700 13px Arial, sans-serif;}'
-        '.team{fill:#5b6f82;font:800 18px Arial, sans-serif;}'
-        '.eventTag{fill:#10364d;font:800 15px Arial, sans-serif;}'
-        '.eventDot{stroke:#f8fbfd;stroke-width:1.5;}'
+        '.axis{stroke:#8ea3b3;stroke-width:3;}'
+        '.tick{stroke:#dbe5ed;stroke-width:2;}'
+        '.label{fill:#10364d;font:800 24px Arial, sans-serif;}'
+        '.sub{fill:#6b7c8f;font:700 18px Arial, sans-serif;}'
+        '.team{fill:#5b6f82;font:800 28px Arial, sans-serif;}'
+        '.eventTag{fill:#10364d;font:800 21px Arial, sans-serif;}'
+        '.eventDot{stroke:#f8fbfd;stroke-width:2.5;}'
         '</style>',
         f'<line x1="{margin_left}" y1="{axis_y}" x2="{width-margin_right}" y2="{axis_y}" class="axis" />',
         f'<text x="{team_label_x}" y="{top_base+10}" text-anchor="end" class="team">Conxo</text>',
@@ -3898,7 +3898,15 @@ def main():
         .timeline-svg-wrap {
             width: 100%;
             overflow-x: auto;
-            padding-bottom: 0.25rem;
+            padding-bottom: 0.45rem;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        .timeline-match-svg {
+            display: block;
+            width: max(100%, 1280px);
+            min-width: 1280px;
+            height: auto;
         }
         .timeline-log-card {
             display: flex;
@@ -4361,7 +4369,11 @@ def main():
             }
             .timeline-svg-wrap {
                 margin: 0 -0.2rem;
-                padding-bottom: 0.35rem;
+                padding-bottom: 0.45rem;
+            }
+            .timeline-match-svg {
+                width: 1500px;
+                min-width: 1500px;
             }
             .timeline-log-card {
                 gap: 0.7rem;
@@ -4489,6 +4501,10 @@ def main():
             }
             .timeline-log-minute {
                 font-size: 0.84rem;
+            }
+            .timeline-match-svg {
+                width: 1360px;
+                min-width: 1360px;
             }
             .player-svg-card svg {
                 min-width: 500px;
