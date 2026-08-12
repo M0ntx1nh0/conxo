@@ -1,4 +1,5 @@
 import base64
+import html
 from io import BytesIO
 import math
 from pathlib import Path
@@ -621,6 +622,139 @@ def _first_existing_column(df: pd.DataFrame, candidates: list[str], default=np.n
 
 def _sync_streamlit_text_snapshot(source_key: str, target_key: str):
     st.session_state[target_key] = st.session_state.get(source_key, "")
+
+
+def _minutes_cell_style(value: int, *, is_total: bool = False, total_max: int = 0) -> str:
+    value = int(value)
+    if is_total:
+        if total_max <= 0:
+            return "background:#f2f6f9;color:#10364d;"
+        ratio = value / total_max
+        if ratio >= 0.72:
+            return "background:#dff1df;color:#1e6b39;"
+        if ratio >= 0.45:
+            return "background:#f4ebc7;color:#8b6610;"
+        return "background:#eef3f7;color:#10364d;"
+    if value <= 0:
+        return "background:#f8e0e0;color:#a33e3e;"
+    if value < 40:
+        return "background:#f8dfcf;color:#b55d24;"
+    if value < 60:
+        return "background:#f5edc8;color:#8b6610;"
+    return "background:#dff1df;color:#1e6b39;"
+
+
+def _change_cell_style(value: int, *, max_value: int = 0, summary: bool = False) -> str:
+    value = int(value)
+    if value <= 0:
+        return "background:#f7fafc;color:#90a2b5;"
+    if summary:
+        ratio = value / max(max_value, 1)
+        if ratio >= 0.72:
+            return "background:#10364d;color:#ffffff;"
+        if ratio >= 0.42:
+            return "background:#d8b24d;color:#10364d;"
+        return "background:#edf4f9;color:#10364d;"
+    ratio = value / max(max_value, 1)
+    if ratio >= 0.66:
+        return "background:#10364d;color:#ffffff;"
+    if ratio >= 0.33:
+        return "background:#8cc4d7;color:#10364d;"
+    return "background:#edf4f9;color:#10364d;"
+
+
+def build_minutes_scroll_table(minutes_matrix: pd.DataFrame, total_minutes: pd.Series) -> str:
+    total_max = int(total_minutes.max()) if len(total_minutes) else 0
+    headers = "".join(
+        f'<th class="scroll-table-head scroll-table-col-head">{html.escape(str(col))}</th>'
+        for col in minutes_matrix.columns.tolist()
+    )
+    rows = []
+    for row_label, row_values in minutes_matrix.iterrows():
+        total_value = int(total_minutes.loc[row_label])
+        cells = [
+            f'<td class="scroll-table-cell scroll-table-sticky-player">{html.escape(str(row_label))}</td>',
+            (
+                f'<td class="scroll-table-cell scroll-table-sticky-total scroll-table-number" '
+                f'style="{_minutes_cell_style(total_value, is_total=True, total_max=total_max)}">{total_value}</td>'
+            ),
+        ]
+        for value in row_values.tolist():
+            style = _minutes_cell_style(int(value))
+            cells.append(
+                f'<td class="scroll-table-cell scroll-table-number" style="{style}">{int(value)}</td>'
+            )
+        rows.append(f"<tr>{''.join(cells)}</tr>")
+    return (
+        '<div class="scroll-table-shell">'
+        '<div class="scroll-table-kicker">Minutos disputados por jornada</div>'
+        '<div class="scroll-table-wrap">'
+        '<table class="scroll-table scroll-table--minutes">'
+        '<thead><tr>'
+        '<th class="scroll-table-head scroll-table-sticky-player">Jugador</th>'
+        '<th class="scroll-table-head scroll-table-sticky-total">Total</th>'
+        f"{headers}"
+        "</tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody>"
+        "</table></div></div>"
+    )
+
+
+def build_change_scroll_table(summary_df: pd.DataFrame, change_matrix: pd.DataFrame) -> str:
+    summary_max = int(summary_df.values.max()) if summary_df.size else 0
+    matrix_max = int(change_matrix.values.max()) if change_matrix.size else 0
+    matrix_headers = []
+    legend_items = []
+    for idx, player_name in enumerate(change_matrix.columns.tolist(), start=1):
+        matrix_headers.append(f'<th class="scroll-table-head scroll-table-col-head">{idx}</th>')
+        legend_items.append(
+            f'<span class="scroll-table-legend-item"><b>{idx}.</b> {html.escape(str(player_name))}</span>'
+        )
+
+    rows = []
+    for row_label in summary_df.index.tolist():
+        cells = [
+            f'<td class="scroll-table-cell scroll-table-sticky-player">{html.escape(str(row_label))}</td>'
+        ]
+        summary_values = summary_df.loc[row_label].tolist()
+        sticky_classes = [
+            "scroll-table-sticky-summary-1",
+            "scroll-table-sticky-summary-2",
+            "scroll-table-sticky-summary-3",
+        ]
+        for sticky_class, value in zip(sticky_classes, summary_values):
+            style = _change_cell_style(int(value), max_value=summary_max, summary=True)
+            cells.append(
+                f'<td class="scroll-table-cell scroll-table-number {sticky_class}" style="{style}">{int(value)}</td>'
+            )
+        matrix_values = change_matrix.loc[row_label].tolist()
+        for value in matrix_values:
+            style = _change_cell_style(int(value), max_value=matrix_max, summary=False)
+            text = str(int(value)) if int(value) > 0 else ""
+            cells.append(
+                f'<td class="scroll-table-cell scroll-table-number" style="{style}">{text}</td>'
+            )
+        rows.append(f"<tr>{''.join(cells)}</tr>")
+
+    return (
+        '<div class="scroll-table-shell">'
+        '<div class="scroll-table-kicker">Matriz de cambios</div>'
+        '<div class="scroll-table-wrap">'
+        '<table class="scroll-table scroll-table--changes">'
+        '<thead><tr>'
+        '<th class="scroll-table-head scroll-table-sticky-player">Jugador</th>'
+        '<th class="scroll-table-head scroll-table-sticky-summary-1">Total</th>'
+        '<th class="scroll-table-head scroll-table-sticky-summary-2">Titular completo</th>'
+        '<th class="scroll-table-head scroll-table-sticky-summary-3">Entró de suplente</th>'
+        f"{''.join(matrix_headers)}"
+        "</tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody>"
+        "</table></div>"
+        '<div class="scroll-table-legend">'
+        '<div class="scroll-table-legend-title">Entrantes</div>'
+        f'<div class="scroll-table-legend-list">{"".join(legend_items)}</div>'
+        "</div></div>"
+    )
 
 
 def build_player_percentage_svg(items: list[tuple[str, float, str]]) -> str:
@@ -2208,95 +2342,9 @@ def render_plantilla(data):
             [60 / 90, "#5fae67"],
             [1.0, "#5fae67"],
         ]
-        fig_heat_minutes = make_subplots(
-            rows=1,
-            cols=2,
-            column_widths=[0.92, 0.08],
-            shared_yaxes=True,
-            horizontal_spacing=0.01,
-        )
-        fig_heat_minutes.add_trace(
-            go.Heatmap(
-                z=minutes_matrix.values,
-                x=[f"J{j}" for j in jornadas],
-                y=minutes_matrix.index.tolist(),
-                colorscale=colorscale_minutes,
-                zmin=0,
-                zmax=90,
-                text=minutes_matrix.values,
-                texttemplate="%{text}",
-                textfont=dict(color="#10364d", size=9),
-                xgap=3,
-                ygap=3,
-                hovertemplate="Jugador: %{y}<br>Jornada: %{x}<br>Minutos: %{z}<extra></extra>",
-                showscale=False,
-            ),
-            row=1,
-            col=1,
-        )
-        fig_heat_minutes.add_trace(
-            go.Heatmap(
-                z=total_minutes.to_numpy().reshape(-1, 1),
-                x=["Total"],
-                y=minutes_matrix.index.tolist(),
-                colorscale=[
-                    [0.0, "#d8b24d"],
-                    [0.5, "#edd289"],
-                    [1.0, "#5fae67"],
-                ],
-                zmin=0,
-                zmax=max(int(total_minutes.max()), 1),
-                text=total_minutes.to_numpy().reshape(-1, 1),
-                texttemplate="%{text}",
-                textfont=dict(color="#10364d", size=9),
-                xgap=3,
-                ygap=3,
-                hovertemplate="Jugador: %{y}<br>Total minutos: %{z}<extra></extra>",
-                showscale=False,
-            ),
-            row=1,
-            col=2,
-        )
-        fig_heat_minutes.update_layout(
-            title="Minutos disputados por jornada",
-            template="plotly_white",
-            margin=dict(l=20, r=20, t=60, b=24),
-            height=max(640, len(player_order) * 38),
-            plot_bgcolor="#f8fbfd",
-            paper_bgcolor="#ffffff",
-        )
-        fig_heat_minutes.update_xaxes(
-            side="top",
-            showgrid=False,
-            tickangle=0,
-            tickfont=dict(size=10, color="#10364d"),
-            automargin=True,
-            row=1,
-            col=1,
-        )
-        fig_heat_minutes.update_xaxes(
-            side="top",
-            showgrid=False,
-            tickfont=dict(size=10, color="#10364d"),
-            automargin=True,
-            row=1,
-            col=2,
-        )
-        fig_heat_minutes.update_yaxes(
-            autorange="reversed",
-            tickfont=dict(size=10, color="#10364d"),
-            automargin=True,
-            row=1,
-            col=1,
-        )
-        fig_heat_minutes.update_yaxes(
-            autorange="reversed",
-            tickfont=dict(size=10, color="#10364d"),
-            automargin=True,
-            row=1,
-            col=2,
-        )
-        st.plotly_chart(fig_heat_minutes, use_container_width=True)
+        minutes_matrix.columns = [f"J{j}" for j in jornadas]
+        render_subsection_title("Minutos disputados por jornada")
+        st.markdown(build_minutes_scroll_table(minutes_matrix, total_minutes), unsafe_allow_html=True)
 
         render_subsection_title("Matriz de cambios")
         change_players = data["general"][
@@ -2353,259 +2401,7 @@ def render_plantilla(data):
         diagonal_mask = np.full((len(player_order_plain), len(player_order_plain)), np.nan)
         np.fill_diagonal(diagonal_mask, 1)
 
-        summary_headers = ["Total", "Titular<br>completo", "Entró de<br>suplente"]
-        fig_change_matrix = make_subplots(
-            rows=1,
-            cols=3,
-            column_widths=[0.17, 0.1, 0.73],
-            shared_yaxes=True,
-            horizontal_spacing=0.01,
-        )
-        fig_change_matrix.add_trace(
-            go.Heatmap(
-                z=np.ones((len(player_labels_ranked), 1)),
-                x=["Jugador"],
-                y=player_labels_ranked,
-                colorscale=[
-                    [0.0, "#fdfefe"],
-                    [1.0, "#fdfefe"],
-                ],
-                zmin=0,
-                zmax=1,
-                xgap=10,
-                ygap=10,
-                hoverinfo="skip",
-                showscale=False,
-                hoverongaps=False,
-            ),
-            row=1,
-            col=1,
-        )
-        fig_change_matrix.add_trace(
-            go.Heatmap(
-                z=summary_df.values,
-                x=summary_headers,
-                y=summary_df.index.tolist(),
-                colorscale=[
-                    [0.0, "#f5e9b8"],
-                    [0.45, "#e0c55f"],
-                    [0.75, "#bf9f2f"],
-                    [1.0, "#10364d"],
-                ],
-                zmin=0,
-                zmax=max(int(summary_df.values.max()), 1),
-                xgap=10,
-                ygap=10,
-                hovertemplate="Jugador: %{y}<br>%{x}: %{z}<extra></extra>",
-                showscale=False,
-                hoverongaps=False,
-            ),
-            row=1,
-            col=2,
-        )
-
-        fig_change_matrix.add_trace(
-            go.Heatmap(
-                z=change_matrix.values,
-                x=player_order_plain,
-                y=change_matrix.index.tolist(),
-                colorscale=[
-                    [0.0, "#f8fbfd"],
-                    [0.001, "#f8fbfd"],
-                    [0.2, "#d4ebf3"],
-                    [0.45, "#87c4d7"],
-                    [0.72, "#2f7ea1"],
-                    [1.0, "#10364d"],
-                ],
-                zmin=0,
-                zmax=max(int(change_matrix.values.max()), 1),
-                xgap=10,
-                ygap=10,
-                hovertemplate=(
-                    "Jugador sustituido: %{y}<br>"
-                    "Entró por él: %{x}<br>"
-                    "Cambios: %{z}<extra></extra>"
-                ),
-                showscale=False,
-                hoverongaps=False,
-            ),
-            row=1,
-            col=3,
-        )
-        fig_change_matrix.add_trace(
-            go.Heatmap(
-                z=diagonal_mask,
-                x=player_order_plain,
-                y=change_matrix.index.tolist(),
-                colorscale=[
-                    [0.0, "#d8e0e8"],
-                    [1.0, "#d8e0e8"],
-                ],
-                zmin=0,
-                zmax=1,
-                xgap=10,
-                ygap=10,
-                hoverinfo="skip",
-                showscale=False,
-                hoverongaps=False,
-            ),
-            row=1,
-            col=3,
-        )
-        fig_change_matrix.update_layout(
-            template="plotly_white",
-            margin=dict(l=14, r=12, t=212, b=20),
-            height=max(760, len(player_order_plain) * 42),
-            plot_bgcolor="#f8fbfd",
-            paper_bgcolor="rgba(248,251,253,0)",
-            font=dict(color="#10364d"),
-        )
-        fig_change_matrix.update_xaxes(
-            side="top",
-            showgrid=False,
-            showticklabels=False,
-            ticks="",
-            zeroline=False,
-            row=1,
-            col=1,
-        )
-        fig_change_matrix.update_xaxes(
-            side="top",
-            showgrid=False,
-            showticklabels=False,
-            ticks="",
-            zeroline=False,
-            row=1,
-            col=2,
-        )
-        fig_change_matrix.update_xaxes(
-            side="top",
-            showgrid=False,
-            showticklabels=False,
-            ticks="",
-            zeroline=False,
-            row=1,
-            col=3,
-        )
-        fig_change_matrix.update_yaxes(
-            autorange="reversed",
-            showticklabels=False,
-            ticks="",
-            showgrid=False,
-            zeroline=False,
-            row=1,
-            col=1,
-        )
-        fig_change_matrix.update_yaxes(
-            autorange="reversed",
-            showticklabels=False,
-            ticks="",
-            showgrid=False,
-            zeroline=False,
-            row=1,
-            col=2,
-        )
-        fig_change_matrix.update_yaxes(
-            autorange="reversed",
-            showticklabels=False,
-            ticks="",
-            showgrid=False,
-            zeroline=False,
-            row=1,
-            col=3,
-        )
-
-        summary_max = max(int(summary_df.values.max()), 1)
-        matrix_max = max(int(change_matrix.values.max()), 1)
-
-        for row_label in player_labels_ranked:
-            fig_change_matrix.add_annotation(
-                x="Jugador",
-                y=row_label,
-                xref="x",
-                yref="y",
-                text=_format_matrix_row_label(row_label),
-                showarrow=False,
-                xanchor="left",
-                yanchor="middle",
-                align="left",
-                xshift=-24,
-                bgcolor="rgba(255,255,255,0.92)",
-                bordercolor="#d7e5ee",
-                borderwidth=1,
-                borderpad=4,
-                font=dict(size=7.5, color="#10364d", family="Arial Black"),
-            )
-
-        for col_name in summary_headers:
-            fig_change_matrix.add_annotation(
-                x=col_name,
-                y=1.03,
-                xref="x2",
-                yref="paper",
-                text=col_name,
-                showarrow=False,
-                textangle=-90,
-                xanchor="center",
-                yanchor="bottom",
-                align="center",
-                bgcolor="rgba(255,255,255,0.94)",
-                bordercolor="#d7e5ee",
-                borderwidth=1,
-                borderpad=4,
-                font=dict(size=8.5, color="#10364d", family="Arial Black"),
-            )
-
-        for idx, col_name in enumerate(player_order_plain, start=1):
-            fig_change_matrix.add_annotation(
-                x=col_name,
-                y=1.02,
-                xref="x3",
-                yref="paper",
-                text=f"<b>{idx}</b>",
-                showarrow=False,
-                textangle=-90,
-                xanchor="center",
-                yanchor="bottom",
-                align="center",
-                bgcolor="rgba(255,255,255,0.94)",
-                bordercolor="#d7e5ee",
-                borderwidth=1,
-                borderpad=3,
-                font=dict(size=8.2, color="#10364d", family="Arial Black"),
-            )
-
-        for y_label, row_vals in zip(summary_df.index.tolist(), summary_df.values):
-            for x_label, cell_value in zip(summary_headers, row_vals):
-                normalized = (float(cell_value) / summary_max) if summary_max else 0
-                text_color = "#ffffff" if normalized >= 0.56 else "#10364d"
-                fig_change_matrix.add_annotation(
-                    x=x_label,
-                    y=y_label,
-                    xref="x2",
-                    yref="y2",
-                    text=str(int(cell_value)),
-                    showarrow=False,
-                    font=dict(size=11, color=text_color, family="Arial Black"),
-                )
-
-        for y_label, row_vals in zip(change_matrix.index.tolist(), change_matrix.values):
-            for x_label, cell_value in zip(player_order_plain, row_vals):
-                if int(cell_value) <= 0:
-                    continue
-                normalized = (float(cell_value) / matrix_max) if matrix_max else 0
-                text_color = "#ffffff" if normalized >= 0.62 else "#10364d"
-                fig_change_matrix.add_annotation(
-                    x=x_label,
-                    y=y_label,
-                    xref="x3",
-                    yref="y3",
-                    text=str(int(cell_value)),
-                    showarrow=False,
-                    font=dict(size=11, color=text_color, family="Arial Black"),
-                )
-
-        st.plotly_chart(fig_change_matrix, use_container_width=True)
+        st.markdown(build_change_scroll_table(summary_df, change_matrix), unsafe_allow_html=True)
 
         change_pairs = (
             change_players[subbed_off_mask]
@@ -4001,6 +3797,127 @@ def main():
             margin: 0 0.28rem;
             font-weight: 700;
         }
+        .scroll-table-shell {
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,253,0.98) 100%);
+            border: 1px solid #d9e7ef;
+            border-radius: 22px;
+            box-shadow: 0 16px 32px rgba(16, 54, 77, 0.07);
+            padding: 0.95rem;
+            margin: 0.75rem 0 1rem;
+        }
+        .scroll-table-kicker {
+            color: #10364d;
+            font-size: 1rem;
+            font-weight: 850;
+            margin-bottom: 0.75rem;
+        }
+        .scroll-table-wrap {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            padding-bottom: 0.2rem;
+        }
+        .scroll-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: max-content;
+            width: max-content;
+        }
+        .scroll-table-head,
+        .scroll-table-cell {
+            padding: 0.62rem 0.7rem;
+            border-right: 1px solid #e6eef4;
+            border-bottom: 1px solid #e6eef4;
+            text-align: center;
+            font-size: 0.85rem;
+            line-height: 1.15;
+            white-space: nowrap;
+            background: #ffffff;
+        }
+        .scroll-table thead .scroll-table-head {
+            position: sticky;
+            top: 0;
+            z-index: 9;
+            background: linear-gradient(180deg, #10364d 0%, #1b5977 100%);
+            color: #f8fbfd;
+            font-weight: 800;
+        }
+        .scroll-table-col-head {
+            min-width: 70px;
+        }
+        .scroll-table-number {
+            font-weight: 800;
+        }
+        .scroll-table-sticky-player {
+            position: sticky;
+            left: 0;
+            z-index: 8;
+            min-width: 240px;
+            max-width: 240px;
+            text-align: left;
+            font-weight: 800;
+            color: #10364d;
+            background: linear-gradient(180deg, #fdfefe 0%, #f3f8fb 100%);
+        }
+        .scroll-table thead .scroll-table-sticky-player {
+            z-index: 12;
+        }
+        .scroll-table-sticky-total {
+            position: sticky;
+            left: 240px;
+            z-index: 8;
+            min-width: 88px;
+            background: #ffffff;
+        }
+        .scroll-table thead .scroll-table-sticky-total {
+            z-index: 11;
+        }
+        .scroll-table-sticky-summary-1,
+        .scroll-table-sticky-summary-2,
+        .scroll-table-sticky-summary-3 {
+            position: sticky;
+            z-index: 8;
+            min-width: 112px;
+            background: #ffffff;
+        }
+        .scroll-table-sticky-summary-1 { left: 240px; }
+        .scroll-table-sticky-summary-2 { left: 352px; }
+        .scroll-table-sticky-summary-3 { left: 464px; }
+        .scroll-table thead .scroll-table-sticky-summary-1,
+        .scroll-table thead .scroll-table-sticky-summary-2,
+        .scroll-table thead .scroll-table-sticky-summary-3 {
+            z-index: 11;
+        }
+        .scroll-table-legend {
+            margin-top: 0.78rem;
+            padding-top: 0.7rem;
+            border-top: 1px solid #e6eef4;
+        }
+        .scroll-table-legend-title {
+            color: #6b7c8f;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.45rem;
+        }
+        .scroll-table-legend-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem 0.6rem;
+        }
+        .scroll-table-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.28rem;
+            padding: 0.36rem 0.52rem;
+            border-radius: 999px;
+            background: #eef4f8;
+            color: #10364d;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
         .player-profile-shell {
             background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,253,0.98) 100%);
             border: 1px solid #d9e7ef;
@@ -4404,6 +4321,36 @@ def main():
                 font-size: 0.84rem;
                 padding-top: 0.08rem;
             }
+            .scroll-table-shell {
+                padding: 0.8rem;
+                border-radius: 18px;
+            }
+            .scroll-table-kicker {
+                font-size: 0.95rem;
+            }
+            .scroll-table-head,
+            .scroll-table-cell {
+                padding: 0.54rem 0.56rem;
+                font-size: 0.78rem;
+            }
+            .scroll-table-sticky-player {
+                min-width: 190px;
+                max-width: 190px;
+            }
+            .scroll-table-sticky-total {
+                left: 190px;
+                min-width: 78px;
+            }
+            .scroll-table-sticky-summary-1 { left: 190px; min-width: 94px; }
+            .scroll-table-sticky-summary-2 { left: 284px; min-width: 94px; }
+            .scroll-table-sticky-summary-3 { left: 378px; min-width: 94px; }
+            .scroll-table-col-head {
+                min-width: 62px;
+            }
+            .scroll-table-legend-list {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
             .player-profile-shell {
                 border-radius: 20px;
                 padding: 0.9rem;
@@ -4511,6 +4458,16 @@ def main():
             .timeline-log-minute {
                 font-size: 0.84rem;
             }
+            .scroll-table-sticky-player {
+                min-width: 168px;
+                max-width: 168px;
+            }
+            .scroll-table-sticky-total {
+                left: 168px;
+            }
+            .scroll-table-sticky-summary-1 { left: 168px; }
+            .scroll-table-sticky-summary-2 { left: 262px; }
+            .scroll-table-sticky-summary-3 { left: 356px; }
             .timeline-match-svg {
                 width: 1360px;
                 min-width: 1360px;
