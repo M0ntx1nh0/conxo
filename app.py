@@ -3051,18 +3051,18 @@ def main():
         @media (max-width: 980px) {
             .mobile-sidebar-hint {
                 position: fixed;
-                top: 4.65rem;
-                left: 0.55rem;
+                top: 4.85rem;
+                left: 2.45rem;
                 z-index: 1000;
                 display: inline-flex;
                 align-items: center;
-                gap: 0.4rem;
-                max-width: min(230px, calc(100vw - 1.1rem));
-                padding: 0.5rem 0.72rem;
+                gap: 0.38rem;
+                max-width: min(250px, calc(100vw - 3rem));
+                padding: 0.46rem 0.7rem;
                 border-radius: 14px;
                 background: rgba(16, 54, 77, 0.95);
                 color: #f8fbfd;
-                font-size: 0.76rem;
+                font-size: 0.74rem;
                 font-weight: 700;
                 line-height: 1.25;
                 box-shadow: 0 12px 24px rgba(16, 54, 77, 0.22);
@@ -3070,11 +3070,23 @@ def main():
                 backdrop-filter: blur(8px);
             }
             .mobile-sidebar-hint::before {
-                content: "⇠";
-                font-size: 0.92rem;
+                content: "⟵";
+                font-size: 0.98rem;
                 line-height: 1;
                 color: #d8b24d;
                 flex-shrink: 0;
+            }
+            .mobile-sidebar-hint::after {
+                content: "";
+                position: absolute;
+                left: -10px;
+                top: 50%;
+                width: 0;
+                height: 0;
+                border-top: 8px solid transparent;
+                border-bottom: 8px solid transparent;
+                border-right: 10px solid rgba(16, 54, 77, 0.95);
+                transform: translateY(-50%);
             }
             .app-hero-shell {
                 padding-right: 0;
@@ -4569,11 +4581,11 @@ def main():
         }
         @media (max-width: 480px) {
             .mobile-sidebar-hint {
-                top: 4.35rem;
-                left: 0.45rem;
-                max-width: min(210px, calc(100vw - 0.9rem));
-                padding: 0.46rem 0.65rem;
-                font-size: 0.72rem;
+                top: 4.5rem;
+                left: 2.2rem;
+                max-width: min(225px, calc(100vw - 2.6rem));
+                padding: 0.42rem 0.62rem;
+                font-size: 0.7rem;
             }
             .page-section-title {
                 font-size: 1.28rem;
@@ -4662,7 +4674,7 @@ def main():
     data = load_data()
     render_header(data["team_name"])
     st.markdown(
-        '<div class="mobile-sidebar-hint">Despliega aquí el menú para navegar por las secciones</div>',
+        '<div class="mobile-sidebar-hint">Pulsa las flechas para abrir el menú de secciones</div>',
         unsafe_allow_html=True,
     )
     if "section" not in st.session_state:
