@@ -4435,9 +4435,10 @@ def main():
             .scroll-table--changes thead .scroll-table-sticky-summary-1,
             .scroll-table--changes thead .scroll-table-sticky-summary-2,
             .scroll-table--changes thead .scroll-table-sticky-summary-3 {
-                position: static;
+                position: sticky;
+                top: 0;
                 left: auto;
-                z-index: auto;
+                z-index: 10;
             }
             .scroll-table-col-head {
                 min-width: 62px;
@@ -4587,9 +4588,10 @@ def main():
             .scroll-table--changes thead .scroll-table-sticky-summary-1,
             .scroll-table--changes thead .scroll-table-sticky-summary-2,
             .scroll-table--changes thead .scroll-table-sticky-summary-3 {
-                position: static;
+                position: sticky;
+                top: 0;
                 left: auto;
-                z-index: auto;
+                z-index: 10;
             }
             .scroll-table-sticky-summary-1 { left: 168px; }
             .scroll-table-sticky-summary-2 { left: 262px; }
